@@ -15,8 +15,8 @@ const float MAX_ANGULO_RANGO = 66.0f;
 const float MIN_ANGULO = -90.0f; 
 const float MAX_ANGULO = 0.0f; 
 
-const float AMPLITUD_PLATAFORMA = 1.0f;
-const float OFFSET_PLATAFORMA = 0.0f;
+const float AMPLITUD_PLATAFORMA = 0.3347f;
+const float OFFSET_PLATAFORMA = 1.0843f;
 
 const int PIN_SERVO = 9;
 
@@ -53,14 +53,12 @@ void mover_servo_general(float angulo_servo) {
   servo.writeMicroseconds(micros_servo);
 }
 
-float calcular_angulo_complementario(float theta_anterior, float delta_t_us, sensors_vec_t* velocidad_angular, sensors_vec_t* aceleracion) {
+float calcular_angulo_complementario(float theta_anterior, float delta_t, sensors_vec_t* velocidad_angular, sensors_vec_t* aceleracion) {
   // tan(theta) = aceleracion.y / aceleracion.z;
-  float theta_acelerometro = atan2(aceleracion->y, aceleracion->z);
-  theta_acelerometro *= RADIANES_2_GRADOS;
+  float theta_acelerometro = RADIANES_2_GRADOS * atan2(aceleracion->y, aceleracion->z);
 
   // theta_nuevo = theta_previo + omega_x * Delta t
-  float theta_giroscopio = theta_anterior + velocidad_angular->x * delta_t_us;
-  theta_giroscopio *= RADIANES_2_GRADOS;
+  float theta_giroscopio = theta_anterior + RADIANES_2_GRADOS * velocidad_angular->x * delta_t;
   
   return ALFA * theta_acelerometro + (1 - ALFA) * theta_giroscopio;
 }
@@ -71,7 +69,7 @@ void rutina_calibracion_servo() {
   
   sensors_event_t acelerometro, giroscopio, temp; // Probar si es necesario crear la referencia o puede ser NULL
   mpu.getEvent(&acelerometro, &giroscopio, &temp);
-  theta_complementario = calcular_angulo_complementario(theta_complementario, delta_t_us, &giroscopio.gyro, &acelerometro.acceleration);
+  theta_complementario = calcular_angulo_complementario(theta_complementario, 1000000.0f * delta_t_us, &giroscopio.gyro, &acelerometro.acceleration);
 
   unsigned long tiempo_actual = micros();
   delta_t_us = tiempo_actual - tiempo_inicio;
@@ -83,8 +81,8 @@ void rutina_calibracion_servo() {
     mover_servo_general(angulo);
     for (int j = 0; j < PUNTOS_ESPERA; j++) {
       mpu.getEvent(&acelerometro, &giroscopio, &temp);
-      theta_complementario = calcular_angulo_complementario(theta_complementario, delta_t_us, &giroscopio.gyro, &acelerometro.acceleration);
-      delay(50); 
+      theta_complementario = calcular_angulo_complementario(theta_complementario, 1000000.0f * delta_t_us, &giroscopio.gyro, &acelerometro.acceleration);
+      delay(10); 
 
       tiempo_actual = micros();
       delta_t_us = tiempo_actual - tiempo_inicio;
@@ -103,16 +101,18 @@ void rutina_calibracion_servo() {
   delay(100);
 }
 
-void setup() {
+void setup() {  
   Serial.begin(115200);
-  while (!Serial)
-    delay(10);  
+  
+  while (!Serial){
+    delay(500);
+  }
 
   // Setteo del servo
   servo.attach(PIN_SERVO);
 
   // Setteo de la imu
-  /*
+  
   if (!mpu.begin()) {
     Serial.println("No se pudo encontrar la IMU");
     while (1) 
@@ -124,9 +124,11 @@ void setup() {
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_500_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_44_HZ);
-  */
   
   delay(100);
+
+  mover_servo_general(0.0f);
+  delay(1000);
 
   // Punto 3
   // rutina_calibracion_servo();
@@ -147,13 +149,21 @@ void setup() {
     * Probar lo mismo con un tiempo de paso de 1Hz 
 */
 
+bool ya_llego = false;
+bool inicio = false;
+unsigned long tiempo_start;
+
 void loop() {
   unsigned long tiempo_inicio = micros();
+  if (!inicio){
+    inicio = true;
+    tiempo_start = tiempo_inicio;
+  }
+   sensors_event_t acelerometro, giroscopio, temp; // Probar si es necesario crear la referencia o puede ser NULL
+   mpu.getEvent(&acelerometro, &giroscopio, &temp);
 
-  // sensors_event_t acelerometro, giroscopio, temp; // Probar si es necesario crear la referencia o puede ser NULL
-  // mpu.getEvent(&acelerometro, &giroscopio, &temp);
-
-  // theta_complementario = calcular_angulo_complementario(theta_complementario, periodo_millis / 1000.0f, &giroscopio.gyro, &acelerometro.acceleration);
+   float delta_t = (float)(periodo_millis) / 1000.0f;
+   theta_complementario = calcular_angulo_complementario(theta_complementario, delta_t, &giroscopio.gyro, &acelerometro.acceleration);
   
   // Punto 1
   // float angulo_servo = MIN_ANGULO; // probamos el minimo de angulo y vamos modificando el MIN_MICROS
@@ -164,11 +174,18 @@ void loop() {
   // float angulo_servo = -42.0f; // probamos el angulo y vamos modificando MIN_ANGULO_RANGO y MAX_ANGULO_RANGO
   // mover_servo_general(angulo_servo);
 
-  float angulo_servo = 0.0f;
+  float angulo_servo = 1.0f;
   mover_servo_general(angulo_servo);
 
-  // Serial.println(theta_complementario);
-  Serial.println("Hola");
+  if (!ya_llego && theta_complementario > 9.66f){
+    ya_llego = true;
+    unsigned long tiempo_total = micros() - tiempo_start;
+    Serial.println(tiempo_total);
+  }
+
+  if (!ya_llego){
+    Serial.println(theta_complementario);
+  }
   
   unsigned long tiempo_transcurrido = micros() - tiempo_inicio;
   if (tiempo_transcurrido < periodo_micros) {

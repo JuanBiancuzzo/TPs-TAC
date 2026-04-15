@@ -6,8 +6,8 @@
 const unsigned long periodo_millis = 20; 
 const unsigned long periodo_micros = periodo_millis * 1000;
 
-const unsigned int MIN_MICROS = 500;
-const unsigned int MAX_MICROS = 1475;  
+const unsigned int MIN_MICROS = 544;
+const unsigned int MAX_MICROS = 1472;  
 
 const float MIN_ANGULO_RANGO = -42.0f; 
 const float MAX_ANGULO_RANGO = 66.0f; 

@@ -29,14 +29,18 @@ const float alfa = 0.1f;
 const float ANGULO_POSITIVO = 30;
 const float ANGULO_NEGATIVO = -30;
 // CANT_ITERACIONES * 2 * periodo_millis / 1000 = tiempo que el servo esta en un angulo
-const int CANT_ITERACIONES = 125; 
+const int CANT_ITERACIONES = 25;
+
+const int CANT_LOOP = 6;
 
 Adafruit_MPU6050 mpu;
 Servo servo;
 float theta_giroscopio = 0.0f, theta_complementario = 0.0f;
 
+
 int contador = 0;
 int signo = -1;
+int contador_loop = 0;
 
 inline float clamp(float valor, float minimo, float maximo) {
   return max(minimo, min(maximo, valor));
@@ -100,6 +104,11 @@ void setup() {
 }
 
 void loop() {
+  if (contador_loop >= CANT_LOOP) {
+    mover_servo_general(0.0f);
+    return;
+  }
+    
   unsigned long tiempo_inicio = micros();
 
   // Lectura de los 7 sensores
@@ -121,6 +130,7 @@ void loop() {
   contador += signo;
   if (abs(contador) >= CANT_ITERACIONES) {
     signo *= -1;
+    contador_loop++;
   }
   
   // Enviar datos

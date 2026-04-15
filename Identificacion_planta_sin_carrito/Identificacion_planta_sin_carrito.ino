@@ -24,11 +24,11 @@ const int PIN_SERVO = 9;
 const float RADIANES_2_GRADOS = 57.2958f;
 const float ALFA = 0.1f;
 
-const int CANT_ANGULOS = 5;
-const float ANGULOS[CANT_ANGULOS] = { 0.0f, 10.0f, 20.0f, 30.0f, 0.0f };
+const int CANT_ANGULOS = 7;
+const float ANGULOS[CANT_ANGULOS] = { 0.0f, 30.0f, 0.0f, 30.0f, 0.0f, 30.0f, 0.0f };
 
 // CANT_ITERACIONES * periodo_millis / 1000 = tiempo que el servo esta en un angulo
-const int CANT_ITERACIONES = 50; 
+const int CANT_ITERACIONES = 100; 
 
 Adafruit_MPU6050 mpu;
 Servo servo;

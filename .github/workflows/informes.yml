@@ -1,0 +1,61 @@
+name: Subir informes
+
+on:
+    workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+    informe-tp1:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Conseguir repo en la rama del tp1
+              uses: actions/checkout@v4
+              with:
+                ref: tp1
+
+            - name: Crear el pdf
+              uses: addnab/docker-run-action@v3
+              timeout-minutes: 5
+              with:
+                    image: juanbiancuzzo/latex:latest
+                    options: -v ${{ github.workspace }}/Informe:/latex
+                    run: sh -c "/scripts/compile.sh && cp /latex/main.pdf /latex/TP1-Grupo2.pdf"
+
+            - name: Subir pdf a github artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                    name: TP1
+                    path: ${{ github.workspace }}/informe/TP1-Grupo2.pdf
+                    if-no-files-found: warn
+    release:
+        needs: informe-tp1
+        runs-on: ubuntu-latest
+
+        steps:
+          - name: Descargar artifact
+            uses: actions/download-artifact@v4
+            with:
+              name: TP1
+              path: .
+    
+          - name: Crear Release
+            id: create_release
+            uses: actions/create-release@v1
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            with:
+              tag_name: informe
+              release_name: "Release informe"
+    
+          - name: Subir artifact como release asset
+            uses: actions/upload-release-asset@v1
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            with:
+              upload_url: ${{ steps.create_release.outputs.upload_url }}
+              asset_path: ./TP1-Grupo2.pdf
+              asset_name: TP1-Grupo2.pdf
+              asset_content_type: application/pdf
+

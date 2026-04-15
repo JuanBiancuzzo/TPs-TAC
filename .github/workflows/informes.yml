@@ -27,7 +27,7 @@ jobs:
               uses: actions/upload-artifact@v4
               with:
                     name: TP1
-                    path: ${{ github.workspace }}/informe/TP1-Grupo2.pdf
+                    path: ${{ github.workspace }}/Informe/TP1-Grupo2.pdf
                     if-no-files-found: warn
     release:
         needs: informe-tp1

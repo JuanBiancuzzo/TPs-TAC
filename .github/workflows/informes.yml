@@ -39,23 +39,11 @@ jobs:
             with:
               name: TP1
               path: .
-    
-          - name: Crear Release
-            id: create_release
-            uses: actions/create-release@v1
-            env:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+          - name: Subir artifact como release asset
+            uses: softprops/action-gh-release@v2
             with:
               tag_name: informe
-              release_name: "Release informe"
-    
-          - name: Subir artifact como release asset
-            uses: actions/upload-release-asset@v1
-            env:
-              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            with:
-              upload_url: ${{ steps.create_release.outputs.upload_url }}
-              asset_path: ./TP1-Grupo2.pdf
-              asset_name: TP1-Grupo2.pdf
-              asset_content_type: application/pdf
-
+              name: "Release informe"
+              files: |
+                **/TP1-Grupo2.pdf

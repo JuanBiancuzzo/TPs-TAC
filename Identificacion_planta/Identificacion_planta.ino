@@ -22,10 +22,25 @@ const float OFFSET_PLATAFORMA = 1.0843f;
 const int PIN_SERVO = 9;
 
 const float RADIANES_2_GRADOS = 57.2958f;
-const float ALFA = 0.1f;
+const float ALFA = 0.12f;
 
-const int CANT_ANGULOS = 7;
-const float ANGULOS[CANT_ANGULOS] = { 0.0f, 30.0f, 0.0f, 30.0f, 0.0f, 30.0f, 0.0f };
+const int CANT_PRUEBAS = 7;
+const int MAX_CANT_ANGULOS = 13; 
+const float SEQ_ANGULOS[CANT_PRUEBAS][MAX_CANT_ANGULOS] = {
+  { 0.0f, 10.0f, 20.0f, 30.0f, 20.0f, 10.0f, 0.0f, -10.0f, -20.0f, -30.0f, -20.0f, -10.0f, 0.0f },
+  { 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 25.0f, 20.0f, 15.0f, 10.0f, 5.0f, 0.0f },
+  { 0.0f, 10.0f, 20.0f, 10.0f, 0.0f, -10.0f, -20.0f, -10.0, 0.0f },
+  { 0.0f, 10.0f, 20.0f, 30.0f, 30.0f, 20.0f, 10.0f, 0.0f },
+  { 0.0f, 10.0f, 0.0f, 10.0f, 0.0f, 10.0f, 0.0f },
+  { 0.0f, 20.0f, 0.0f, 20.0f, 0.0f, 20.0f, 0.0f },
+  { 0.0f, 30.0f, 0.0f, 30.0f, 0.0f, 30.0f, 0.0f },
+}; 
+const int SEQ_CANT[CANT_PRUEBAS] = {13, 13, 9, 8, 7, 7, 7};
+const int NUM_PRUEBA = 6;
+
+#define CANT_ANGULOS SEQ_CANT[NUM_PRUEBA]
+#define ANGULOS SEQ_ANGULOS[NUM_PRUEBA]
+
 
 // CANT_ITERACIONES * periodo_millis / 1000 = tiempo que el servo esta en un angulo
 const int CANT_ITERACIONES = 100; 

@@ -1,13 +1,24 @@
-# TPs-TAC
-Este repositorio contendrá todo el desarrollo de los trabajos prácticos en la cursada de 1C2026 de Taller de Automatización y Control
+# TPs-TAC - Práctica N°4
+Se tiene una identificación de la planta, con las mediciones de la plataforma sola con mediciones de 0 a 10, dado por $$
+    P_d(s) = \frac{ 0.0243 }{ (s + 0.6505) (s + 0.7869) }
+P =
+ 
+  0.0083317 (s-100)^2
+  --------------------
+  (s^2 + 31.13s + 271)
+$$
 
-## Prácticas
-En esta sección se muestran todas las ramas en las cuales desarrollamos las prácticas
- * [Práctica 1 - Protocolos](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica1)
- * [Práctica 2 - Fusión de sensores](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica2)
- * [Práctica 3 - Identificación](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica3)
- * [Práctica 4 - Control digital](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica4)
+Vamos a plantear el controlador dado por $$
+C = k / s, con k = 7.9433
+$$
 
-## Trabajos prácticos
-En esta sección se muestran las ramas en las cuales se desarrolla los trabajos prácticos
- * [Trabajo Práctico 1 - Introducción al control digital](https://github.com/JuanBiancuzzo/TPs-TAC/tree/tp1) - [Informe](https://github.com/JuanBiancuzzo/TPs-TAC/releases/download/informe/TP1-Grupo2.pdf)
+Discretizado obtenemos el controlador $$ 
+Cd = 0.066834 * (z + 1) / (z - 1)
+$$
+
+En código, esto se traduce a 
+```c
+float accion_control(float accion_previo, float error_actual, float error_previo) {
+    return accion_previo + GANANCIA_A * (error_actual + error_previo);
+}
+```

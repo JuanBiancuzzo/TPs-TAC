@@ -11,3 +11,4 @@ En esta sección se muestran todas las ramas en las cuales desarrollamos las pr�
 ## Trabajos prácticos
 En esta sección se muestran las ramas en las cuales se desarrolla los trabajos prácticos
  * [Trabajo Práctico 1 - Introducción al control digital](https://github.com/JuanBiancuzzo/TPs-TAC/tree/tp1) - [Informe](https://github.com/JuanBiancuzzo/TPs-TAC/releases/download/informe/TP1-Grupo2.pdf)
+ * [Trabajo Práctico 2 - Control digital](https://github.com/JuanBiancuzzo/TPs-TAC/tree/tp2) - [Informe](https://github.com/JuanBiancuzzo/TPs-TAC/releases/download/informe/TP2-Grupo2.pdf)

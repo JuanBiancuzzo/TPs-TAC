@@ -7,6 +7,7 @@ En esta sección se muestran todas las ramas en las cuales desarrollamos las pr�
  * [Práctica 2 - Fusión de sensores](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica2)
  * [Práctica 3 - Identificación](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica3)
  * [Práctica 4 - Control digital](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica4)
+ * [Práctica 5 - HIL](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica5)
 
 ## Trabajos prácticos
 En esta sección se muestran las ramas en las cuales se desarrolla los trabajos prácticos

@@ -22,7 +22,7 @@ const float OFFSET_PLATAFORMA = 1.0843f;
 const int PIN_SERVO = 9;
 
 const float RADIANES_2_GRADOS = 57.2958f;
-const float ALFA = 0.12f;
+const float ALFA = 0.8f;
 
 const int CANT_PRUEBAS = 7;
 const int MAX_CANT_ANGULOS = 13; 

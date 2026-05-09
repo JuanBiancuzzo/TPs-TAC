@@ -5,7 +5,7 @@ plataforma = out.plataforma;
 tiempo = out.tout;
 
 carperta = "mediciones";
-posicion_carro = "centro";
+posicion_carro = "12_5";
 
 datos = table();
 datos.Tiempo = tiempo;
@@ -13,3 +13,4 @@ datos.Control = control;
 datos.Plataforma = plataforma;
 
 writetable(datos, sprintf("%s/carro_en_%s.csv", carperta, posicion_carro));
+

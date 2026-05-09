@@ -22,7 +22,7 @@ const float OFFSET_PLATAFORMA = 1.0843f;
 const int PIN_SERVO = 9;
 
 const float RADIANES_2_GRADOS = 57.2958f;
-const float ALFA = 0.8f;
+const float ALFA = 0.07f;
 
 const int CANT_PRUEBAS = 7;
 const int MAX_CANT_ANGULOS = 13; 
@@ -36,7 +36,7 @@ const float SEQ_ANGULOS[CANT_PRUEBAS][MAX_CANT_ANGULOS] = {
   { 0.0f, 30.0f, 0.0f, 30.0f, 0.0f, 30.0f, 0.0f },
 }; 
 const int SEQ_CANT[CANT_PRUEBAS] = {13, 13, 9, 8, 7, 7, 7};
-const int NUM_PRUEBA = 6;
+const int NUM_PRUEBA = 0; 
 
 #define CANT_ANGULOS SEQ_CANT[NUM_PRUEBA]
 #define ANGULOS SEQ_ANGULOS[NUM_PRUEBA]

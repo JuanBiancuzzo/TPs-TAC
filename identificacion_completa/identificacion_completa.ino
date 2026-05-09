@@ -1,8 +1,8 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Servo.h>
+#include <NewPing.h>
 #include <Wire.h>
-#include <math.h>
 
 const unsigned long periodo_millis = 20; 
 const unsigned long periodo_micros = periodo_millis * 1000;
@@ -23,13 +23,20 @@ const int MAX_ANGULO_RANGO = 66;
 const unsigned int MIN_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MIN_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
 const unsigned int MAX_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MAX_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
 
-const int PIN_SERVO = 9;
+const unsigned int VELOCIDAD_CM_MICROS = 29287;
+const float CENTRO_PLATAFORMA = 20.0f;
 
 const float RADIANES_2_GRADOS = 57.2958f;
-const float ALFA = 0.08f;
+const float ALFA = 0.07f;
 
 const float K_P = 1.0f;
 const float K_I = 0.0f;
+
+const int PIN_SERVO = 9;
+
+const int TRIGGER_PIN  = 11;  
+const int ECHO_PIN     = 12;  
+const int MAX_DISTANCE = 200; 
 
 typedef struct {
   float err_actual;
@@ -40,6 +47,7 @@ typedef struct {
 
 Adafruit_MPU6050 mpu;
 Servo servo;
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 
 info_control_t datos_control = {
   .err_actual = 0.0f,
@@ -66,6 +74,10 @@ float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* veloci
   float theta_giroscopio = theta_anterior + RADIANES_2_GRADOS * velocidad_angular->x * ((float)(periodo_millis) / 1000.0f);
   
   return ALFA * theta_acelerometro + (1 - ALFA) * theta_giroscopio;
+}
+
+float calcular_posicion(unsigned int tiempo_ida_vuelta_micros) {
+  return CENTRO_PLATAFORMA - ((float) (tiempo_ida_vuelta_micros * VELOCIDAD_CM_MICROS)) / 2.0f;
 }
 
 float avanzar_control(float posicion_medida, info_control_t* control_prev) {
@@ -114,10 +126,11 @@ void loop() {
   // Lectura de los 7 sensores
   sensors_event_t acelerometro, giroscopio, temperatura;
   mpu.getEvent(&acelerometro, &giroscopio, &temperatura);
+  unsigned int tiempo_ida_vuelta_micros = sonar.ping();
 
   // Procesamiento de las mediciones
   theta_complementario = calcular_angulo_complementario(theta_complementario, &giroscopio.gyro, &acelerometro.acceleration);
-  float posicion_carro = 0.0f;
+  float posicion_carro = calcular_posicion(tiempo_ida_vuelta_micros);
 
   // Calculamos la accion a realizar
   unsigned int pwm_control = avanzar_control(posicion_carro, &datos_control);

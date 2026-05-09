@@ -23,7 +23,7 @@ const int MAX_ANGULO_RANGO = 66;
 const unsigned int MIN_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MIN_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
 const unsigned int MAX_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MAX_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
 
-const unsigned int VELOCIDAD_CM_MICROS = 29287;
+const float VELOCIDAD_CM_MICROS = 337.4f * 1e-4; // a 10 grados
 const float CENTRO_PLATAFORMA = 20.0f;
 
 const float RADIANES_2_GRADOS = 57.2958f;
@@ -77,7 +77,7 @@ float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* veloci
 }
 
 float calcular_posicion(unsigned int tiempo_ida_vuelta_micros) {
-  return CENTRO_PLATAFORMA - ((float) (tiempo_ida_vuelta_micros * VELOCIDAD_CM_MICROS)) / 2.0f;
+  return CENTRO_PLATAFORMA - ((float) (tiempo_ida_vuelta_micros) * VELOCIDAD_CM_MICROS) / 2.0f;
 }
 
 float avanzar_control(float posicion_medida, info_control_t* control_prev) {

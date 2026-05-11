@@ -17,7 +17,7 @@ const int MAX_DISTANCE = 200;
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 
 float calcular_posicion(unsigned int tiempo_ida_vuelta_micros) {
-  return ((float) (tiempo_ida_vuelta_micros) * VELOCIDAD_CM_MICROS) / 2.0f;
+  return 15.71f - ((float) (tiempo_ida_vuelta_micros) * VELOCIDAD_CM_MICROS) / 2.0f;
 }
 
 void setup() {

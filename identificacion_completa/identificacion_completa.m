@@ -100,52 +100,50 @@ plot_verificacion(Pd, tiempo, control, salida)
 
 %% Identificacion con trapezoidal 
 
-trans_c2d = zeros(orden, orden);
-trans_c2d(:, 1) = [5 10 10 5 1]' * (dt/2)^5;
-trans_c2d(:, 2) = [3 1 -1 -3 -1]' * (dt/2)^4;
-trans_c2d(:, 3) = [0 1 -1 -1 1]' * (dt/2)^2;
-trans_c2d(:, 4) = [-3 2 -2 -3 1]' * (dt/2);
-trans_c2d(:, 5) = [-5 10 -10 5 -1]';
-
-trans_d2c = inv(trans_c2d);
-C = zeros(orden);
-C(5) = trans_d2c(5, 5);
-C(1:4) = trans_d2c(5, 1:4) / C(5);
-
-
-X = zeros(largo - orden, variables);
-for i = 0:orden
-    coef = nchoosek(orden, i);
-    X(:, 1) = X(:, 1) + coef * control(orden-i:largo-i);
-end 
-
-for i = 1:4
-    X(:, i + 1) = C(i) * posicion(1:largo-orden) - posicion(orden-i:largo-i);
+function [ lista_k_menos ] = desplazar(lista, k)
+    lista_k_menos = lista(orden+k-1:largo-k);
 end
 
-y = posicion(orden:largo) + C(5) * posicion(1:largo-orden);
+y = desplazar(posicion, 0) + desplazar(posicion, 5);
+X = zeros(largo - orden, variables);
+X(1, :) = desplazar(posicion, 5);
+X(2, :) = desplazar(posicion, 1) - desplazar(posicion, 5);
+X(3, :) = desplazar(posicion, 2) + desplazar(posicion, 5);
+X(4, :) = desplazar(posicion, 3) - desplazar(posicion, 5);
+X(5, :) = desplazar(posicion, 4) + desplazar(posicion, 5);
+
+escala = [1 5 10 10 5 1];
+for posicion = range(0, orden)
+    agregado = escala(posicion + 1) * desplazar(control, posicion);
+    X(6, :) = X(6, :) + agregado;
+end
 
 D = regresion_lineal(X, y);
 
-beta0 = D(1);
-Beta = [1 5 10 10 5 1] * beta0;
-
-alfa1 = D(2);
-alfa2 = D(3);
-alfa3 = D(4);
-alfa4 = D(5);
-alfa5 = C(5) - C(1:4) * D(2:5)';
-Alfa = [1 alfa1 alfa2 alfa3 alfa4 alfa5];
+alfa0 = -1024 / D(1);
+alfa1 = D(2) * alfa0;
+alfa2 = D(3) * alfa0;
+alfa3 = D(4) * alfa0;
+alfa4 = D(5) * alfa0;
+alfa5 = alfa0 - alfa1 + alfa2 - alfa3 + alfa4 - 1024;
+Alfas = [ alfa0 alfa1 alfa2 alfa3 alfa4 alfa5 ];
+b0 = D(6) * alfa0 / (dt^5);
 
 z = tf('z', dt);
 Z = [1 z^(-1) z^(-2) z^(-3) z^(-4) z^(-5)];
-Pd = (Beta * Z') / (Alfa * Z'); 
+Pd = (dt^5 * b0 * Z') / (Alfas * Z'); 
 
-A = trans_c2d / Alfa(2:6);
-b0 = beta0 * (2 / dt)^5;
+trans_d2c = zeros(orden, 6);
+trans_d2c(1, :) = [1 1 1 1 1 1] * (1 / (dt^5 * 32));
+trans_d2c(2, :) = [5 3 1 -1 -3 -5] * (1 / (dt^4 * 64));
+trans_d2c(3, :) = [5 1 -1 -1 1 5] * (1 / (dt^3 * 64));
+trans_d2c(4, :) = [5 -1 -1 1 1 -5] * (1 / (dt^2 * 128));
+trans_d2c(5, :) = [5 -3 1 1 -3 5] * (1 / (dt * 512));
+
+As = trans_d2c * Alfas;
 
 s = tf('s');
-S = [1 s s^3 s^4 s^5];
+S = [1 s s^2 s^3 s^4 s^5];
 P = b0 / (S * A');
 
 plot_verificacion(Pd, tiempo, control, salida)

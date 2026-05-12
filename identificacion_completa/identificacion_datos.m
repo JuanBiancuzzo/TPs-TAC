@@ -1,6 +1,6 @@
 %% Lectura de datos por simulink
 %  Primero correr el simulink para tener los valores de out
-kp = 0.1;
+kp = 25;
 ki = 0;
 
 datos = table();

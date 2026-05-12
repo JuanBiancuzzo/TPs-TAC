@@ -10,7 +10,7 @@ const unsigned long periodo_micros = periodo_millis * 1000;
 const unsigned int MIN_MICROS = 544;
 const unsigned int MID_MICROS = 1472;  
 const unsigned int DIFF_MICROS = MID_MICROS - MIN_MICROS;
- 
+
 const int MIN_ANGULO = -90; 
 const int MID_ANGULO = 0; 
 const int DIFF_ANGULO = MID_ANGULO - MIN_ANGULO;
@@ -21,16 +21,18 @@ const int MAX_ANGULO_RANGO = 66;
 // Se esta teniendo en cuenta que la funcion micros descarta los primeros 2 bits
 // por lo que esta division entre enteros no causa ningun efecto sobre el resultado
 const unsigned int MIN_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MIN_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
-const unsigned int MAX_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MAX_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
+// const unsigned int MAX_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MAX_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
+const unsigned int MAX_MICROS_RANGO = 2152;
 
 const float VELOCIDAD_CM_MICROS = 337.4f * 1e-4; // a 10 grados
-const float CENTRO_PLATAFORMA = 20.0f;
+const float CENTRO_PLATAFORMA = 16.06f;
 
 const float RADIANES_2_GRADOS = 57.2958f;
 const float ALFA = 0.07f;
 
-const float K_P = 1.0f;
+const float K_P = 25.0f;
 const float K_I = 0.0f;
+const unsigned int ACCION_EQUILIBRIO = MID_MICROS;
 
 const int PIN_SERVO = 9;
 
@@ -80,7 +82,7 @@ float calcular_posicion(unsigned int tiempo_ida_vuelta_micros) {
   return CENTRO_PLATAFORMA - ((float) (tiempo_ida_vuelta_micros) * VELOCIDAD_CM_MICROS) / 2.0f;
 }
 
-float avanzar_control(float posicion_medida, info_control_t* control_prev) {
+unsigned int avanzar_control(float posicion_medida, info_control_t* control_prev) {
   // Calculo de la accion
   float error_actual = control_prev->posicion_ref - posicion_medida;
   float factor_integracion = control_prev->acumulada + \
@@ -92,7 +94,8 @@ float avanzar_control(float posicion_medida, info_control_t* control_prev) {
   control_prev->err_previo = control_prev->err_actual;
   control_prev->err_actual = error_actual;
 
-  return accion_actual;
+  // Es negativo porque el signo del servo (angulo) es disntito al signo de la posicion
+  return ACCION_EQUILIBRIO - (unsigned int) (accion_actual);
 }
 
 void setup() {
@@ -152,8 +155,11 @@ void enviar_datos(float pwm_control, float theta_medicion, float posicion_medida
   // Enviar header
   Serial.write("abcd");
 
-  const int cant_mediciones = 4;
-  float mediciones[cant_mediciones] = { pwm_control, theta_medicion, posicion_medida, error };
+  const int cant_mediciones = 6;
+  float mediciones[cant_mediciones] = { 
+    pwm_control, MIN_MICROS_RANGO, MAX_MICROS_RANGO, 
+    theta_medicion, posicion_medida, error,
+  };
 
   // Enviar los floats como bytes
   Serial.write((byte*) mediciones, sizeof(float) * cant_mediciones);

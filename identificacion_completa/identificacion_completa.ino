@@ -31,7 +31,7 @@ const float RADIANES_2_GRADOS = 57.2958f;
 const float ALFA = 0.07f;
 
 const float K_P = 25.0f;
-const float K_I = 0.0f;
+const float K_I = 0.02f;
 const unsigned int ACCION_EQUILIBRIO = MID_MICROS;
 
 const int PIN_SERVO = 9;

@@ -1,7 +1,7 @@
 %% Lectura de datos por simulink
 %  Primero correr el simulink para tener los valores de out
 kp = 25;
-ki = 0;
+ki = 0.02;
 
 datos = table();
 datos.Tiempo = out.tout;

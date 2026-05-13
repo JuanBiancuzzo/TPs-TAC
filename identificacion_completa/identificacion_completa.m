@@ -1,7 +1,7 @@
 %% Lectura de datos
 kp = 25;
 ki = 0;
-intento = 1;
+intento = 3;
 
 archivo = sprintf("identificacion_%d_kp_%.2f_ki_%.2f", intento, kp, ki);
 path = sprintf("mediciones/%s.csv", replace(archivo, ".", "_"));

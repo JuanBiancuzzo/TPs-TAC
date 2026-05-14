@@ -1,7 +1,7 @@
 %% Lectura de datos
 kp = 25;
 ki = 0;
-intento = 1;
+intento = 3;
 
 archivo = sprintf("identificacion_%d_kp_%.2f_ki_%.2f", intento, kp, ki);
 path = sprintf("mediciones/%s.csv", replace(archivo, ".", "_"));
@@ -9,8 +9,8 @@ datos = readtable(path);
 
 accionEquilibrio = 1472;
 dt = 0.02;
-recorteInicio = 1 + ceil(9 / dt);
-recorteFinal = ceil(13 / dt);
+recorteInicio = 1 + ceil(0 / dt);
+recorteFinal = ceil(25 / dt);
 
 tiempo = datos.Tiempo(recorteInicio:recorteFinal);
 control = (datos.ControlPWM - accionEquilibrio);
@@ -29,26 +29,27 @@ function [D] = regresion_lineal(X, y)
     D = (X' * X) \ (X' * y);
 end
 
-function plot_verificacion(planta_d, tiempo, control, salida_real)
-    salida_simulada = lsim(planta_d, control, tiempo);
-
-    figure
-    hold on 
-    grid on
-    
-    plot(tiempo, salida_simulada, 'y-')
-    plot(tiempo, salida_real, 'r-')
-    plot(tiempo, control, 'g-')
-
-    legend("Simulacion", "Real", "Control")
-end
-
 function [ lista_k_menos ] = desplazar_general(lista, k, orden, largo)
     lista_k_menos = lista(orden-k+1:largo-k);
 end
 
 desplazar = @(lista, k) desplazar_general(lista, k, orden, largo);
 
+%% Verificando de contenido de control
+% Calculamos el fft para ver la frecuencia de la acción de control
+Cfft = fft(control);
+frecuencias = (1/dt) * (0:(largo/2)) / largo;
+
+% Descarto la mitad de 
+Cff = abs(Cfft / largo);
+Cff = Cff(1:largo/2+1);
+Cff(2:end-1) = 2 * Cff(2:end-1); % es lo mismo que dividir f(0) por 2
+
+figure
+grid on
+
+plot(frecuencias, Cff)
+title("FFT de la señal de control, debería tener valores en frecuencia tipo 20Hz")
 %% Identificacion con foward difference
 % yn = beta5 * u_{n-5} - sum_{i = 1}^{5} alfa_i * y_{n-i}
 
@@ -127,6 +128,7 @@ a4 = A(5);
 a5 = A(6);
 b0 = A(7);
 
+s = tf('s');
 P = b0 / (a0 + a1 * s + a2 * s^2 + a3 * s^3 + a4 * s^4 + a5 * s^5);
 
 
@@ -174,12 +176,20 @@ s = tf('s');
 S = [1 s s^2 s^3 s^4 s^5];
 % P = b0 / (S * As');
 
-plot_verificacion(Pd, tiempo, control, posicion)
 
 %% Verificacion
 
-plot_verificacion(Pd, tiempo, control, posicion)
+salida_simulada = lsim(Pd, control, tiempo);
 
+figure
+hold on 
+grid on
+
+plot(tiempo, salida_simulada, 'y-')
+plot(tiempo, posicion, 'r-')
+plot(tiempo, control, 'g-')
+
+legend("Simulacion", "Real", "Control")
 
 %% Prueba con pulso
 

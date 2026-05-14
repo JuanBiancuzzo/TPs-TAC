@@ -1,19 +1,23 @@
 %% Lectura de datos
 kp = 25;
 ki = 0;
-intento = 3;
+intento = 1;
 
 archivo = sprintf("identificacion_%d_kp_%.2f_ki_%.2f", intento, kp, ki);
 path = sprintf("mediciones/%s.csv", replace(archivo, ".", "_"));
 datos = readtable(path);
 
-tiempo = datos.Tiempo;
-control = datos.ControlPWM;
-plataforma = datos.Plataforma;
-posicion = datos.Posicion;
-error = datos.Error;
-
+accionEquilibrio = 1472;
 dt = 0.02;
+recorteInicio = 1 + ceil(9 / dt);
+recorteFinal = ceil(13 / dt);
+
+tiempo = datos.Tiempo(recorteInicio:recorteFinal);
+control = (datos.ControlPWM - accionEquilibrio);
+control = control(recorteInicio:recorteFinal);
+plataforma = datos.Plataforma(recorteInicio:recorteFinal);
+posicion = datos.Posicion(recorteInicio:recorteFinal);
+error = datos.Error(recorteInicio:recorteFinal);
 
 largo = size(control);
 largo = largo(1);
@@ -34,8 +38,9 @@ function plot_verificacion(planta_d, tiempo, control, salida_real)
     
     plot(tiempo, salida_simulada, 'y-')
     plot(tiempo, salida_real, 'r-')
+    plot(tiempo, control, 'g-')
 
-    legend("Simulacion", "Real")
+    legend("Simulacion", "Real", "Control")
 end
 
 function [ lista_k_menos ] = desplazar_general(lista, k, orden, largo)
@@ -77,35 +82,55 @@ Pd = beta5 / (z^5 + alfa1 * z^4 + alfa2 * z^3 + alfa3 * z^2 + alfa4 * z + alfa5)
 % s = tf('s');
 % P = b0 / (s^5 + a4 * s4 + a3 * s3 + a1 * s + a0);
 
-plot_verificacion(Pd, tiempo, control, posicion)
-
 %% Identificacion con backward difference
-% yn = beta_0/alfa_0 * u_{n-5} + 1/alfa_0 * y_{n-5} - sum_{i = 1}^{4} alfa_i/alfa_0 * y_{n-i}
+%
 
-% X = zeros(largo - orden, variables);
-% X(:, 1) = control(orden:largo);
-% X(:, orden + 1) = posicion(orden:largo-orden-orden+1);
-% for i = 1:orden-1
-    % X(:, i + 1) = -posicion(i:largo-orden-i+1);  
-% end
-% y = theta(orden:largo);
+y = desplazar(posicion, 0);
+X = zeros(largo - orden, variables);
+X(:, 1) = desplazar(posicion, 5);
+X(:, 2) = desplazar(posicion, 1);
+X(:, 3) = desplazar(posicion, 2);
+X(:, 4) = desplazar(posicion, 3);
+X(:, 5) = desplazar(posicion, 4);
+X(:, 6) = desplazar(control, 0);
 
-% D = regresion_lineal(X, y);
+D = regresion_lineal(X, y);
 
-% alfa0 = 1 / D(6);
-% beta0 = alfa0 * D(1);
-% alfa1 = alfa0 * D(2);
-% alfa2 = alfa0 * D(3);
-% alfa3 = alfa0 * D(4);
-% alfa4 = alfa0 * D(5);
+alfa0 = 1 / D(1);
+alfa1 = -D(2) * alfa0;
+alfa2 = -D(3) * alfa0;
+alfa3 = -D(4) * alfa0;
+alfa4 = -D(5) * alfa0;
+alfa5 = -1;
+beta  = D(6) * alfa0;
 
-% z = tf('z', dt);
-% Pd = beta5 / (z^5 + alfa1 * z^4 + alfa2 * z^3 + alfa3 * z^2 + alfa4 * z + alfa5);
+z = tf('z', dt);
+Pd = beta / (alfa0 + alfa1 * z^(-1) + alfa2 * z^(-2) + alfa3 * z^(-3) + alfa4 * z^(-4) + alfa5 * z^(-5));
 
-% b0 = beta0 / (dt^5);
-% plot_verificacion(Pd, tiempo, control, salida)
+trans_d2c = [
+    1/dt^(5)  1/dt^(5)  1/dt^(5)  1/dt^(5)  1/dt^(5)   1/dt^(5)       0 ;
+          0  -1/dt^(4) -2/dt^(4) -3/dt^(4) -4/dt^(4)  -5/dt^(4)       0 ;
+          0         0   1/dt^(3)  3/dt^(3)  6/dt^(3)  10/dt^(3)       0 ;
+          0         0         0  -1/dt^(2) -4/dt^(2) -10/dt^(2)       0 ;
+          0         0         0         0   1/dt^(1)   5/dt^(1)       0 ;
+          0         0         0         0         0   -1/dt^(0)       0 ;
+          0         0         0         0         0          0  1/dt^(5)
+];
 
-%% Identificacion con trapezoidal 
+A = trans_d2c * [alfa0 alfa1 alfa2 alfa3 alfa4 alfa5 beta]';
+
+a0 = A(1);
+a1 = A(2);
+a2 = A(3);
+a3 = A(4);
+a4 = A(5);
+a5 = A(6);
+b0 = A(7);
+
+P = b0 / (a0 + a1 * s + a2 * s^2 + a3 * s^3 + a4 * s^4 + a5 * s^5);
+
+
+%% Identificacion con trapezoidal - No confiable
 
 y = desplazar(posicion, 0) + desplazar(posicion, 5);
 X = zeros(largo - orden, variables);
@@ -150,3 +175,36 @@ S = [1 s s^2 s^3 s^4 s^5];
 % P = b0 / (S * As');
 
 plot_verificacion(Pd, tiempo, control, posicion)
+
+%% Verificacion
+
+plot_verificacion(Pd, tiempo, control, posicion)
+
+
+%% Prueba con pulso
+
+nuevo_control = zeros(largo, 1);
+nuevo_control(10:40) = 10 * ones(40 - 10 + 1, 1);
+salida_simulada = lsim(Pd, nuevo_control, tiempo);
+
+figure
+hold on
+grid on
+
+plot(tiempo, nuevo_control, 'r-')
+plot(tiempo, salida_simulada, 'y-')
+
+legend("Control", "Salida")
+
+%% Bode
+
+optionss=bodeoptions;
+optionss.MagVisible='off';
+optionss.PhaseMatching='on';
+optionss.PhaseMatchingValue=-180;
+optionss.PhaseMatchingFreq=1;
+optionss.Grid='on';
+optionss.MagVisible='on';
+
+figure("Name", "Sistema continuo");
+bode(P, optionss);

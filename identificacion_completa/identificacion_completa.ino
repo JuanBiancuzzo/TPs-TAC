@@ -52,6 +52,7 @@ typedef struct {
   float theta_plataforma; 
   float posicion_carro; 
   float error_posicion;
+  unsigned long tiempo_transcurrido;
   bool hubo_error;
 } info_enviar_t;
 

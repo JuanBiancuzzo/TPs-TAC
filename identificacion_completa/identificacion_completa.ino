@@ -47,6 +47,14 @@ typedef struct {
   float posicion_ref;
 } info_control_t;
 
+typedef struct {
+  float accion_control;
+  float theta_plataforma; 
+  float posicion_carro; 
+  float error_posicion;
+  bool hubo_error;
+} info_enviar_t;
+
 Adafruit_MPU6050 mpu;
 Servo servo;
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
@@ -58,6 +66,8 @@ info_control_t datos_control = {
   .posicion_ref = 0.0f,  
 };
 float theta_complementario = 0.0f;
+
+info_enviar_t info_enviar;
 
 void mover_servo(unsigned int senial_pwm) {
   if (senial_pwm < MIN_MICROS_RANGO) {
@@ -82,7 +92,7 @@ float calcular_posicion(unsigned int tiempo_ida_vuelta_micros) {
   return CENTRO_PLATAFORMA - ((float) (tiempo_ida_vuelta_micros) * VELOCIDAD_CM_MICROS) / 2.0f;
 }
 
-unsigned int avanzar_control(float posicion_medida, info_control_t* control_prev) {
+float avanzar_control(float posicion_medida, info_control_t* control_prev) {
   // Calculo de la accion
   float error_actual = control_prev->posicion_ref - posicion_medida;
   float factor_integracion = control_prev->acumulada + \
@@ -95,7 +105,7 @@ unsigned int avanzar_control(float posicion_medida, info_control_t* control_prev
   control_prev->err_actual = error_actual;
 
   // Es negativo porque el signo del servo (angulo) es disntito al signo de la posicion
-  return ACCION_EQUILIBRIO - (unsigned int) (accion_actual);
+  return accion_actual;
 }
 
 void setup() {
@@ -136,29 +146,39 @@ void loop() {
   float posicion_carro = calcular_posicion(tiempo_ida_vuelta_micros);
 
   // Calculamos la accion a realizar
-  unsigned int pwm_control = avanzar_control(posicion_carro, &datos_control);
+  float accion_control = avanzar_control(posicion_carro, &datos_control);
 
   // Actuamos sobre el servo
+  unsigned int pwm_control = ACCION_EQUILIBRIO - (unsigned int)accion_control;
   mover_servo(pwm_control);
   
-  // Enviar datos
-  enviar_datos((float)pwm_control, theta_complementario, posicion_carro, datos_control.err_actual);
+  // Enviar dato
+  info_enviar.accion_control = accion_control,
+  info_enviar.theta_plataforma = theta_complementario,
+  info_enviar.posicion_carro = posicion_carro,
+  info_enviar.error_posicion = datos_control.err_actual,
+  enviar_datos(&info_enviar);
 
   unsigned long tiempo_transcurrido = micros() - tiempo_inicio;
+  info_enviar.tiempo_transcurrido = tiempo_transcurrido;
+  info_enviar.hubo_error = tiempo_transcurrido > periodo_micros;
+
   if (tiempo_transcurrido < periodo_micros) {
     unsigned long tiempo_espera = periodo_micros - tiempo_transcurrido;
     delay(tiempo_espera / 1000);
   }
 }
 
-void enviar_datos(float pwm_control, float theta_medicion, float posicion_medida, float error){  
+void enviar_datos(info_enviar_t* info){  
   // Enviar header
   Serial.write("abcd");
 
   const int cant_mediciones = 6;
   float mediciones[cant_mediciones] = { 
-    pwm_control, MIN_MICROS_RANGO, MAX_MICROS_RANGO, 
-    theta_medicion, posicion_medida, error,
+    info->accion_control, info->theta_plataforma, 
+    info->posicion_carro, info->error_posicion,
+    (float)info->tiempo_transcurrido,
+    info->hubo_error ? 1.0f : 0.0f,
   };
 
   // Enviar los floats como bytes

@@ -44,6 +44,9 @@ class Grafico:
     def iniciarPlot(self):
         plt.ion() # Hacemos que sea interactivo el plot aka actualizable
         self.figure, (axControl, axTheta, axPosicion, axTiempo) = plt.subplots(4, figsize = (10, 10))
+
+        # Lo inicializamos en ceros, ya que la actualizacion va a agarrar los valores reales
+        ceros = np.zeros(self.cantidadPuntos)
         
         # Plot de control
         midMicros = 1472 # 0 grados
@@ -51,28 +54,28 @@ class Grafico:
         maxMicrosRango = 2152 - midMicros # 66 grados
 
         axControl.plot(self.tiempo, minMicrosRango * np.ones(self.cantidadPuntos))
-        self.lineaControl, = axControl.plot(self.tiempo, self.datos[POS_ACCION_CONTROL, :])
+        self.lineaControl, = axControl.plot(self.tiempo, ceros)
         axControl.plot(self.tiempo, maxMicrosRango * np.ones(self.cantidadPuntos))
 
         axControl.grid(True)
         axControl.set_ylabel("Acción de control")
 
         # Plot angulo de la plataforma
-        self.lineaTheta, = axTheta.plot(self.tiempo, self.datos[POS_THETA_PLATAFORMA, :])
+        self.lineaTheta, = axTheta.plot(self.tiempo, ceros)
 
         axTheta.grid(True)
         axTheta.set_ylabel("Angulo de la plataforma [deg]")
 
         # Plot posicion
-        self.lineaPosicion, = axPosicion.plot(self.tiempo, self.datos[POS_POSICION_CARRO, :], label = "Posicion")
-        self.lineaReferencia, = axPosicion.plot(self.tiempo, self.datos[POS_POSICION_CARRO, :] + self.datos[POS_POSICION_ERROR, :], label = "referencia")
+        self.lineaPosicion, = axPosicion.plot(self.tiempo, ceros, label = "Posicion")
+        self.lineaReferencia, = axPosicion.plot(self.tiempo, ceros, label = "referencia")
 
         axPosicion.grid(True)
         axPosicion.set_ylabel("Posicion del carro [cm]")
         axPosicion.legend()
 
         # Plot tiempo transcurrido
-        self.lineaTiempo, = axTiempo.plot(self.tiempo, self.datos[POS_TIEMPO_TRANSCURRIDO_MICROS, :] / 1000)
+        self.lineaTiempo, = axTiempo.plot(self.tiempo, ceros)
         axTiempo.plot(self.tiempo, 1000 * PERIODO * np.ones(self.cantidadPuntos))
 
         axTiempo.grid(True)
@@ -81,6 +84,14 @@ class Grafico:
         self.figure.suptitle("Identificación", fontsize = 20)
 
     def agregarDatos(self, nuevosDatos):
+        if self.puntoActual >= self.cantidadPuntos - 1:
+            self.puntoActual = self.cantidadPuntos - 1
+            # Desplazamos un dato (-1) cuando se llenan
+            self.datos = np.roll(self.datos, -1, axis = 1)
+
+        else:
+            self.puntoActual += 1
+
         for posicion, nuevoDato in enumerate(nuevosDatos):
             self.datos[posicion, self.puntoActual] = nuevoDato
 

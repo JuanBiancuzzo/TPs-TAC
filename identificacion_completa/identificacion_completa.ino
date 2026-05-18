@@ -53,7 +53,6 @@ typedef struct {
   float posicion_carro; 
   float error_posicion;
   unsigned long tiempo_transcurrido;
-  bool hubo_error;
 } info_enviar_t;
 
 Adafruit_MPU6050 mpu;
@@ -162,7 +161,6 @@ void loop() {
 
   unsigned long tiempo_transcurrido = micros() - tiempo_inicio;
   info_enviar.tiempo_transcurrido = tiempo_transcurrido;
-  info_enviar.hubo_error = tiempo_transcurrido > periodo_micros;
 
   if (tiempo_transcurrido < periodo_micros) {
     unsigned long tiempo_espera = periodo_micros - tiempo_transcurrido;
@@ -174,12 +172,11 @@ void enviar_datos(info_enviar_t* info){
   // Enviar header
   Serial.write("abcd");
 
-  const int cant_mediciones = 6;
+  const int cant_mediciones = 5;
   float mediciones[cant_mediciones] = { 
     info->accion_control, info->theta_plataforma, 
     info->posicion_carro, info->error_posicion,
     (float)info->tiempo_transcurrido,
-    info->hubo_error ? 1.0f : 0.0f,
   };
 
   // Enviar los floats como bytes

@@ -25,12 +25,12 @@ const unsigned int MIN_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MIN_ANGULO_
 const unsigned int MAX_MICROS_RANGO = 2152;
 
 const float VELOCIDAD_CM_MICROS = 337.4f * 1e-4; // a 10 grados
-const float CENTRO_PLATAFORMA = 16.06f;
+const float CENTRO_PLATAFORMA = 15.25f;
 
 const float RADIANES_2_GRADOS = 57.2958f;
 const float ALFA = 0.07f;
 
-const float K_P = 25.0f;
+const float K_P = 45.0f;
 const float K_I = 0.02f;
 const unsigned int ACCION_EQUILIBRIO = MID_MICROS;
 

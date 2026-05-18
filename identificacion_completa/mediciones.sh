@@ -16,6 +16,10 @@ while [[ $# -gt 0 ]]; do
       ARCHIVO="$2"
       shift # past argument
       shift # past value
+    -s|--serial)
+      SERIAL="$2"
+      shift # past argument
+      shift # past value
       ;;
     -d|--directory)
       DIRECTORIO="$2"
@@ -40,13 +44,20 @@ if [ ! -v ARCHIVO ]; then
   exit -1
 fi
 
+if [ ! -v SERIAL ]; then
+  SERIAL="serial"
+fi
+
 if [ ! -v DIRECTORIO ]; then
   DIRECTORIO="mediciones"
 fi
 
 
-path=$(printf "%s/%s_kp_%.2f_ki_%.2f.csv" $DIRECTORIO $ARCHIVO $KP $KI)
+path_datos=$(printf "%s/%s_kp_%.2f_ki_%.2f.csv" $DIRECTORIO $ARCHIVO $KP $KI)
+path_serial=$(printf "%s/%s_kp_%.2f_ki_%.2f.csv" $DIRECTORIO $SERIAL $KP $KI)
 printf "Guardando en: %s\n" $path
 
 # Usamos el file descriptor 3 para la informacion del archivo
-python3 arduino_serial_comentado.py 3>$path
+# python3 arduino_serial_comentado.py 3>$path
+
+python3 lectura_serial.py -c COM3 -v 5 | tee --ignore-interrupts $path_seriaal | python3 visualizar_datos.py 1>$path_datos

@@ -2,6 +2,7 @@
 intento = 7;
 kp = 45;
 ki = 0;
+pwmEquilibrio = 1472;
 plataformaEquilibrio = -2;
 corrimiento = 0;
 
@@ -9,6 +10,7 @@ corrimiento = 0;
 intento = 8;
 kp = 45;
 ki = 0;
+pwmEquilibrio = 1472;
 plataformaEquilibrio = -2;
 corrimiento = 0;
 
@@ -30,6 +32,8 @@ recorteFinal = min(largo(1), ceil(tiempoFinal / dt));
 
 tiempo = (datos.Tiempo - datos.Tiempo(recorteInicio));
 tiempo = tiempo(recorteInicio:recorteFinal);
+senialPwm = (datos.ControlPWM - pwmEquilibrio);
+senialPwm = senialPwm(recorteInicio:recorteFinal);
 control = (datos.Plataforma - plataformaEquilibrio);
 control = control(recorteInicio:recorteFinal);
 posicion = (datos.Posicion + corrimiento);
@@ -100,6 +104,42 @@ optionss.MagVisible='on';
 
 figure("Name", "Sistema continuo");
 bode(P, optionss, {0.1, 200});
+
+%% Verificacion completa
+
+beta0 = 0;
+alfa0 = 0;
+alfa1 = 0;
+alfa2 = 0;
+
+Pd_sb = beta0 / (alfa0 + alfa1 * z^(-1) + alfa2 * z^(-2));
+
+a1 = -inv_dt * (2 * alfa2 + alfa1);
+a0 = inv_dt^2 * (alfa2 + alfa1 + alfa0);
+b0 = inv_dt^2 * beta0;
+
+P_sb = b0 / (s^2 + a1 * s + a0);
+
+Pd_completo = Pd * Pd_sb;
+P_completo = P * P_sb;
+
+salida_simulada = lsim(Pd_completo, senialPwm, tiempo);
+
+subplot(2, 1, 1);
+hold on 
+grid on
+
+plot(tiempo, salida_simulada, 'g-')
+plot(tiempo, posicion, 'r-')
+legend("Simulada", "Real")
+
+subplot(2, 1, 2);
+hold on
+grid on
+plot(tiempo, senialPwm, 'b-')
+
+figure("Name", "Sistema continuo");
+bode(P_completo, optionss, {0.1, 200});
 
 %% Funciones
 

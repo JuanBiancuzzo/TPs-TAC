@@ -1,11 +1,11 @@
 %% Lectura de datos por simulink
 %  Primero correr el simulink para tener los valores de out
-kp = 25;
-ki = 0.02;
+kp = 45;
+ki = 0;
 
 datos = table();
 datos.Tiempo = out.tout;
-datos.ControlPWM = out.control;
+datos.ControlPWM = out.control - 1472;
 datos.Plataforma = out.plataforma;
 datos.Posicion = out.posicion;
 datos.Error = out.error;
@@ -13,7 +13,7 @@ datos.Error = out.error;
 for intento = 1:100 
     archivo = sprintf("identificacion_%d_kp_%.2f_ki_%.2f", intento, kp, ki);
     path = sprintf("mediciones/%s.csv", replace(archivo, ".", "_"));
-
+    
     if isfile(path)
         continue;
     end

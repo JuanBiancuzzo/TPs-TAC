@@ -31,7 +31,7 @@ const float RADIANES_2_GRADOS = 57.2958f;
 const float ALFA = 0.07f;
 
 const float K_P = 45.0f;
-const float K_I = 0.02f;
+const float K_I = 0.0f;
 const unsigned int ACCION_EQUILIBRIO = MID_MICROS;
 
 const int PIN_SERVO = 9;
@@ -144,7 +144,7 @@ void loop() {
   // Procesamiento de las mediciones
   theta_complementario = calcular_angulo_complementario(theta_complementario, &giroscopio.gyro, &acelerometro.acceleration);
   float posicion_carro = calcular_posicion(tiempo_ida_vuelta_micros);
-
+  
   // Calculamos la accion a realizar
   float accion_control = avanzar_control(posicion_carro, &datos_control);
 
@@ -153,10 +153,10 @@ void loop() {
   mover_servo(pwm_control);
   
   // Enviar dato
-  info_enviar.accion_control = accion_control,
-  info_enviar.theta_plataforma = theta_complementario,
-  info_enviar.posicion_carro = posicion_carro,
-  info_enviar.error_posicion = datos_control.err_actual,
+  info_enviar.accion_control = accion_control;
+  info_enviar.theta_plataforma = theta_complementario;
+  info_enviar.posicion_carro = posicion_carro;
+  info_enviar.error_posicion = datos_control.err_actual;
   enviar_datos(&info_enviar);
 
   unsigned long tiempo_transcurrido = micros() - tiempo_inicio;
@@ -166,17 +166,20 @@ void loop() {
     unsigned long tiempo_espera = periodo_micros - tiempo_transcurrido;
     delay(tiempo_espera / 1000);
   }
+
+  iteraciones++;
 }
 
 void enviar_datos(info_enviar_t* info){  
   // Enviar header
   Serial.write("abcd");
 
-  const int cant_mediciones = 5;
+  const int cant_mediciones = 6;
   float mediciones[cant_mediciones] = { 
-    info->accion_control, info->theta_plataforma, 
+    info->accion_control + ACCION_EQUILIBRIO, MIN_MICROS_RANGO, MAX_MICROS_RANGO,
+    info->theta_plataforma, 
     info->posicion_carro, info->error_posicion,
-    (float)info->tiempo_transcurrido,
+    // (float)info->tiempo_transcurrido,
   };
 
   // Enviar los floats como bytes

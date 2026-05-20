@@ -2,54 +2,73 @@
 #include <Adafruit_Sensor.h>
 #include <Servo.h>
 #include <Wire.h>
-#include <math.h>
 
 const unsigned long periodo_millis = 20; 
 const unsigned long periodo_micros = periodo_millis * 1000;
 
 const unsigned int MIN_MICROS = 544;
-const unsigned int MAX_MICROS = 1472;  
+const unsigned int MID_MICROS = 1472 - 10;  
+const unsigned int DIFF_MICROS = MID_MICROS - MIN_MICROS;
 
-const float MIN_ANGULO_RANGO = -42.0f; 
-const float MAX_ANGULO_RANGO = 66.0f; 
- 
-const float MIN_ANGULO = -90.0f; 
-const float MAX_ANGULO = 0.0f; 
+const int MIN_ANGULO = -90; 
+const int MID_ANGULO = 0; 
+const int DIFF_ANGULO = MID_ANGULO - MIN_ANGULO;
+const float SESGO_ANGULO = -1.17;
 
-const float AMPLITUD_PLATAFORMA = 0.3347f;
-const float OFFSET_PLATAFORMA = 1.0843f;
+const int MIN_ANGULO_RANGO = -42; 
+const int MAX_ANGULO_RANGO = 66; 
+
+// Se esta teniendo en cuenta que la funcion micros descarta los primeros 2 bits
+// por lo que esta division entre enteros no causa ningun efecto sobre el resultado
+const unsigned int MIN_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MIN_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
+// const unsigned int MAX_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MAX_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
+const unsigned int MAX_MICROS_RANGO = 2152;
+
+const float RADIANES_2_GRADOS = 57.2958f;
+const float ALFA = 0.07f;
+
+const unsigned int CONTROL_EQUILIBRIO = MID_MICROS;
 
 const int PIN_SERVO = 9;
 
-const float RADIANES_2_GRADOS = 57.2958f;
-const float ALFA = 0.12f;
+typedef struct {
+  float theta;
+  float velocidad;
+} info_estimacion_t;
+
+typedef struct {
+  float pwm;
+  float theta_medido; 
+  float theta_estimado;
+  float velocidad_medida;
+  float velocidad_estimada;
+} info_enviar_t;
 
 const int CANT_PRUEBAS = 7;
-const int MAX_CANT_ANGULOS = 13; 
-const float SEQ_ANGULOS[CANT_PRUEBAS][MAX_CANT_ANGULOS] = {
-  { 0.0f, 10.0f, 20.0f, 30.0f, 20.0f, 10.0f, 0.0f, -10.0f, -20.0f, -30.0f, -20.0f, -10.0f, 0.0f },
-  { 0.0f, 5.0f, 10.0f, 15.0f, 20.0f, 25.0f, 30.0f, 25.0f, 20.0f, 15.0f, 10.0f, 5.0f, 0.0f },
-  { 0.0f, 10.0f, 20.0f, 10.0f, 0.0f, -10.0f, -20.0f, -10.0, 0.0f },
-  { 0.0f, 10.0f, 20.0f, 30.0f, 30.0f, 20.0f, 10.0f, 0.0f },
-  { 0.0f, 10.0f, 0.0f, 10.0f, 0.0f, 10.0f, 0.0f },
-  { 0.0f, 20.0f, 0.0f, 20.0f, 0.0f, 20.0f, 0.0f },
-  { 0.0f, 30.0f, 0.0f, 30.0f, 0.0f, 30.0f, 0.0f },
+const int MAX_CANT_PWMS = 13; 
+const float SEQ_PWMS[CANT_PRUEBAS][MAX_CANT_PWMS] = {
+  { 0.0f, 100.0f, 200.0f, 300.0f, 200.0f, 100.0f, 0.0f, -100.0f, -200.0f, -300.0f, -200.0f, -100.0f, 0.0f },
+  { 0.0f, 50.0f, 100.0f, 150.0f, 200.0f, 250.0f, 300.0f, 250.0f, 200.0f, 150.0f, 100.0f, 50.0f, 0.0f },
+  { 0.0f, 100.0f, 200.0f, 100.0f, 0.0f, -100.0f, -200.0f, -100.0, 0.0f },
+  { 0.0f, 100.0f, 200.0f, 300.0f, 300.0f, 200.0f, 100.0f, 0.0f },
+  { 0.0f, 100.0f, 0.0f, 100.0f, 0.0f, 100.0f, 0.0f },
+  { 0.0f, 200.0f, 0.0f, 200.0f, 0.0f, 200.0f, 0.0f },
+  { 0.0f, 300.0f, 0.0f, 300.0f, 0.0f, 300.0f, 0.0f },
 }; 
 const int SEQ_CANT[CANT_PRUEBAS] = {13, 13, 9, 8, 7, 7, 7};
-const int NUM_PRUEBA = 6;
+const int NUM_PRUEBA = 5;
 
-#define CANT_ANGULOS SEQ_CANT[NUM_PRUEBA]
-#define ANGULOS SEQ_ANGULOS[NUM_PRUEBA]
+#define CANT_PWMS SEQ_CANT[NUM_PRUEBA]
+#define PWMS SEQ_PWMS[NUM_PRUEBA]
 
 const float A_d[2][2] = {
   { 1.0f, 0.02f }, 
-  { -5.4200, 1.6226 },
+  { -2.118, 1.1606 },
 };
-
-const float B_d[2] = { 0.0f, 0.1666e-3 };
+const float B_d[2] = { 0.0f, 0.0641f };
 const float C_d[2] = { 1.0f, 0.0f };
 
-const float L[2] = { 2.6227, 126.2258 };
+const float L[2] = { 1.8899, 50.4383 };
 
 // CANT_ITERACIONES * periodo_millis / 1000 = tiempo que el servo esta en un angulo
 const int CANT_ITERACIONES = 100; 
@@ -58,36 +77,25 @@ Adafruit_MPU6050 mpu;
 Servo servo;
 float theta_complementario = 0.0f;
 
-int contador_iteracion = 0, contador_angulo = 0;
+info_estimacion_t datos_estimados = {
+  .theta = 0.0f,
+  .velocidad = 0.0f,
+};
 
-const int ESTADO_THETA = 0;
-const int ESTADO_VELOCIDAD = 1;
-float estado[2] = { 0.0f, 0.0f };
+int contador_iteracion = 0, contador_pwm = 0;
 
-inline float clamp(float valor, float minimo, float maximo) {
-  return max(minimo, min(maximo, valor));
-}
-
-inline float mapFloat(float valor, float min_in, float max_in, float min_out, float max_out) {
-  return (valor - min_in) * (max_out - min_out) / (max_in - min_in) + min_out; 
-}
-
-void mover_plataforma(float angulo_plataforma) {
-  mover_servo(AMPLITUD_PLATAFORMA * (angulo_plataforma - OFFSET_PLATAFORMA));
-}
-
-void mover_servo(float angulo_servo) {
-  // Para cuando tengamos las amplitudes definidas, podemos juntar las dos funciones de
-  //    la siguiente forma:
-  // float angulo_servo = AMPLITUD_PLATAFORMA * (angulo_plataforma - OFFSET_PLATAFORMA); 
-  float angulo_limitado = clamp(angulo_servo, MIN_ANGULO_RANGO, MAX_ANGULO_RANGO);
-  unsigned int micros_servo = (unsigned int) mapFloat(angulo_limitado, MIN_ANGULO, MAX_ANGULO, MIN_MICROS, MAX_MICROS);
-  servo.writeMicroseconds(micros_servo);
+void mover_servo(unsigned int senial_pwm) {
+  if (senial_pwm < MIN_MICROS_RANGO) {
+    senial_pwm = MIN_MICROS_RANGO;
+  } else if (senial_pwm > MAX_MICROS_RANGO) {
+    senial_pwm = MAX_MICROS_RANGO;
+  }
+  servo.writeMicroseconds(senial_pwm);
 }
 
 float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* velocidad_angular, sensors_vec_t* aceleracion) {
   // tan(theta) = aceleracion.y / aceleracion.z;
-  float theta_acelerometro = RADIANES_2_GRADOS * atan2(aceleracion->y, aceleracion->z);
+  float theta_acelerometro = RADIANES_2_GRADOS * atan2(aceleracion->y, aceleracion->z) - SESGO_ANGULO;
 
   // theta_nuevo = theta_previo + omega_x * Delta t
   float theta_giroscopio = theta_anterior + RADIANES_2_GRADOS * velocidad_angular->x * ((float)(periodo_millis) / 1000.0f);
@@ -118,13 +126,10 @@ void setup() {
   // Setteo del servo
   servo.attach(PIN_SERVO);
   delay(100);
-
-  mover_plataforma(0.0f);
-  delay(1000);
 }
 
 void loop() {
-  if (contador_angulo >= CANT_ANGULOS) {
+  if (contador_pwm >= CANT_PWMS) {
     return;
   }
   
@@ -138,29 +143,38 @@ void loop() {
   theta_complementario = calcular_angulo_complementario(theta_complementario, &giroscopio.gyro, &acelerometro.acceleration);
 
   // Lograr generar una señal del servo
-  float angulo_control = ANGULOS[contador_angulo];
-  mover_servo(angulo_control);
+  float pwm_control = PWMS[contador_pwm];
+  mover_servo((unsigned int)(pwm_control + CONTROL_EQUILIBRIO));
 
-  float theta_estimado = (A_d[0][0] * estado[ESTADO_THETA] + A_d[0][1] * estado[ESTADO_VELOCIDAD]) \
-    + B_d[0] * angulo_control \
-    + L[0] * (theta_complementario - C_d[0] * estado[ESTADO_THETA]);
+  float y_medido = theta_complementario;
+  float y_hat = C_d[0] * datos_estimados.theta + C_d[1] * datos_estimados.velocidad;
 
-  float velocidad_estimado = (A_d[1][0] * estado[ESTADO_THETA] + A_d[1][1] * estado[ESTADO_VELOCIDAD]) \
-    + B_d[1] * angulo_control \
-    + L[1] * (theta_complementario - C_d[1] * estado[ESTADO_VELOCIDAD]);
+  float theta_estimado = (A_d[0][0] * datos_estimados.theta + A_d[0][1] * datos_estimados.velocidad) \
+    + B_d[0] * pwm_control \
+    + L[0] * (y_medido - y_hat);
 
-  estado[ESTADO_THETA] = theta_estimado;
-  estado[ESTADO_VELOCIDAD] = velocidad_estimado;
+  float velocidad_estimada = (A_d[1][0] * datos_estimados.theta + A_d[1][1] * datos_estimados.velocidad) \
+    + B_d[1] * pwm_control \
+    + L[1] * (y_medido - y_hat);
+
+  datos_estimados.theta = theta_estimado;
+  datos_estimados.velocidad = velocidad_estimada;
 
   if (contador_iteracion >= CANT_ITERACIONES) {
     contador_iteracion = 0;
-    contador_angulo++;
+    contador_pwm++;
   }
 
   contador_iteracion++;
   
   // Enviar datos
-  enviar_datos(angulo_control, theta_complementario, theta_estimado, giroscopio.gyro.x, velocidad_estimado);
+  enviar_datos({
+    .pwm = pwm_control,
+    .theta_medido = theta_complementario,
+    .theta_estimado = theta_estimado,
+    .velocidad_medida = giroscopio.gyro.x * RADIANES_2_GRADOS,
+    .velocidad_estimada = velocidad_estimada,
+  });
 
   unsigned long tiempo_transcurrido = micros() - tiempo_inicio;
   if (tiempo_transcurrido < periodo_micros) {
@@ -169,14 +183,17 @@ void loop() {
   }
 }
 
-void enviar_datos(float control, float theta_complementario, float theta_estimado, float velocidad_angular, float velocidad_angular_estimado){  
+void enviar_datos(info_enviar_t info){  
   // Enviar header
   Serial.write("abcd");
 
   const int cant_mediciones = 5;
   float mediciones[cant_mediciones] = { 
-    control, theta_complementario, theta_estimado,
-    velocidad_angular, velocidad_angular_estimado,
+    info.pwm,
+    info.theta_medido,
+    info.theta_estimado,
+    info.velocidad_medida,
+    info.velocidad_estimada,
   };
 
   // Enviar los floats como bytes

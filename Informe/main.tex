@@ -6,7 +6,6 @@
             scale={0.8,0.8},hoffset=0.5cm,voffset=1cm]{geometry}
 
 \usepackage{verbatim}
-\usepackage{comment}
 
 % paquetes matemáticos básicos
 \usepackage{amsmath}
@@ -165,23 +164,8 @@
 
 \section{Modelo}
 
-\begin{comment}
-    En esta sección se va a detallar el modelo que se utilizará de este momento en adelante, donde por prolijidad se separará en reconocimiento de las variables, y su relación con el modelo físico, el modelo matemático y finalmente la identificación de los parámetros.
-\end{comment}
 
 \subsection{Variables del sistema}
-\begin{comment}
-    En clase mencionó que el modelo puede ser de orden 4, 5 o 6, donde el de orden 4 es es más simple pero sensible
-    a cualquier cagada que hagamos en el modelo, es decir, todo modelado tiene que estar muy tunneado para dar algo 
-    bien; de orden 5 implica más variables a modelar, por lo que impone una cierta dificultad en la identificación
-    pero hace más fácil manejar nuestros errores, y ese orden extra esta relacionado a el "circuito" que genera la
-    señal; por último, de orden 6 es el más complejo pero no da tanto beneficio como el de orden 5, y este incluye
-    el modelado del retardo en dar la señal de control
-
-    En mi opinion, creo q es mejor el orden 5, no debería ser tan dificil modelar ese circuito extra, y creo q nos
-    va a ayudar en que sea más fácil de controlar. 
-\end{comment}
-
 En esta sección se analizará el modelado de la planta \textit{Ball and Beam}, que será utilizado a lo largo de todo el trabajo práctico. Como entrada a la planta, se tomará el ancho del pulso PWM comandado al servo ($u$) y como salida la posición del carrito, medida a partir del sensor de distancia ($p$). Para poder resolver el problema de modelado, este se divide en dos partes. Por un lado, se analizará la planta servo-barra ($P_{sb}$), que tomará como entrada la señal comandada al servo y como salida el ángulo de la barra $\theta_b$. Luego, se analiza la planta barra-carrito ($P_{bc}$), que tomará como entrada $\theta_b$ y como salida la posición del carrito. Una vez que se tenga la descripción de cada una de estas, se determina el modelo de la planta completa considerando:
 
 \begin{equation*}
@@ -190,10 +174,6 @@ En esta sección se analizará el modelado de la planta \textit{Ball and Beam}, 
 
 Además, se utiliza un modelado de tipo caja gris, donde se realizará en cada caso un análisis simplificado del modelo físico y matemático para reconocer la forma de la función de transferencia de la planta. Sin conocer los parámetros asociados a este modelo físico, se determinará cada transferencia según que tan bien se ajuste esta a las mediciones, como bien se explicará más adelante. Un modelado de tipo caja blanca también parte de la física de la planta, pero considera que los parámetros asociados se pueden medir, que en este caso resulta muy complejo y en sí el modelo matemático obtenido será una aproximación, no logrará describir por completo la dinámica de la planta. Tampoco se optó por un modelado de tipo caja negra, en el cual se toma al sistema como algo completamente desconocido. En este caso, analizar de forma aproximada la física del modelo no resulta ser un problema tan complejo y permite darle otra interpretación al modelo a la hora de ajustar los polos y ceros para que sea compatible con las mediciones. 
 
-\begin{comment} LEER
-    Creo que es mejor dejar definido los sentidos antes de ir por todo el análisis, ya que acá mismo definimos casi todas las variables. Pero no se que pensas
-    También deje comentado el mismo texto que tenías antes, por si no te gusta la idea de ponerlo acá
-\end{comment}
 Por último, antes del análisis, se muestra en la figura \ref{fig:sentidos} en qué dirección se definen $\theta_b$, $\theta_m$ y $p$. Tomando que a la derecha se ubica el sensor, $p$ es positivo en dirección al sensor y los ángulos son positivos en sentido antihorario. 
 
 \begin{figure}[H]
@@ -226,18 +206,6 @@ Donde $V_m$ es la tensión de alimentación del motor, $I_m$, $R$ y $L$ son la c
 
 Donde $\eta$ es la relación de reducción entre los torques, $T_b$ y $\omega_b$ el torque y la velocidad angular de la barra y $B_b$ y $J_b$ el rozamiento y la inercia de la barra.
 
-\begin{comment}
-En la figura \ref{fig:sentidos} se muestra en qué dirección se definen $\theta_b$, $\theta_m$ y $p$. Tomando que a la derecha se ubica el sensor, $p$ es positivo en dirección al sensor y los ángulos son positivos en sentido antihorario. 
-
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.7\linewidth]{imagenes/sentidos_planta.PNG}
-    \caption{Direcciones definidas para el ángulo de la barra y la posición del carrito.}
-    \label{fig:sentidos}
-\end{figure}
-
-El ángulo de la barra puede tomar valores entre \SI{-14}{\degree} y \SI{22}{\degree} aproximadamente. Esta es una limitación propia de la planta, asociada a cómo se construyó. Esta limitación se traduce a una limitación en el ángulo del servo y, por ende, en el ancho del PWM comandado al servo. El ángulo del servo puede tomar valores entre \SI{-42}{\degree} y \SI{66}{\degree} y el ancho del PWM entre \SI{1033}{\micro\second} y \SI{2135}{\micro\second}.
-\end{comment}
 
 Recordando la figura \ref{fig:sentidos}, el ángulo de la barra puede tomar valores entre \SI{-14}{\degree} y \SI{22}{\degree} aproximadamente. Esta es una limitación propia de la planta, asociada a cómo se construyó. Esta limitación se traduce a una limitación en el ángulo del servo y, por ende, en el ancho del PWM comandado al servo. El ángulo del servo puede tomar valores entre \SI{-42}{\degree} y \SI{66}{\degree} y el ancho del PWM entre \SI{1033}{\micro\second} y \SI{2135}{\micro\second}.
 
@@ -348,7 +316,6 @@ Se toma una primera medición del ángulo de la barra ante un escalón del ancho
     \centering
     \includegraphics[width=\linewidth]{imagenes/id_1_servo_barra.png}
     \caption{Gráfico temporal del ángulo de la barra medido y simulado ante un escalón del ancho del PWM comandado al servo.}
-    \label{fig:id_1_servo_barra}
 \end{figure}
 
 Se prueba el modelo ya entrenado con los datos anteriores con una medición distinta para validar su funcionamiento. Se grafica la señal medida y simulada, además de la señal PWM.
@@ -357,7 +324,6 @@ Se prueba el modelo ya entrenado con los datos anteriores con una medición dist
     \centering
     \includegraphics[width=\linewidth]{imagenes/id_2_servo_barra.png}
     \caption{Gráfico temporal del ángulo de la barra medido y simulado para validar el modelo de la planta.}
-    \label{fig:id_2_servo_barra}
 \end{figure}
 
 La planta en discreta y en continua obtenida a partir del modelo fueron:
@@ -548,10 +514,6 @@ Se valida este modelo con otra medición que tiene una variación similar en el 
     \label{fig:id_3_barra_carro}
 \end{figure}
 
-\begin{comment}
-    Aca decía sin el retardo, pero la continua si lo tiene, y creo que la discreta tamién pero no
-    me sale de cabeza si lo es, por si acaso lo cambia a que diga que si tienen retardo
-\end{comment}
 Las plantas obtenidas en discreta y continua con el retardo son:
 
 \begin{equation*}
@@ -671,27 +633,11 @@ Las variables de estado del sistema completo resulta simplemente de apilas las v
 
 La función de transferencia completa estará dada por:
 
-\begin{comment}
-    P = P_{sb}\cdot P_{bc} = \frac{(1.48\cdot10^6)s - 10.61\cdot10^6}{s^6 + 510.71s^5 + (67.95\cdot10^3)s^4 + (1.48\cdot10^6)s^3 + (18.71\cdot10^6)s^2 + (81.43\cdot10^6)s}
-\end{comment}
 \begin{equation*}
     P = P_{sb}\cdot P_{bc} = \frac{1.48\cdot10^6(s-7.14)}{s(s+300)(s+187.1)(s+7.14)(s^2+16.47s+203)}
 \end{equation*}
 
 \section{Limitaciones de diseño}
-\begin{comment}
-    Por caracteristicas fisica:
-     * Existe una limitacion de sobrepico en cuanto a una respuesta al escalón.
-     * Por la velocidad del servo, existe una limitación en cuanto a la velocidad del control -> Preguntar a ro
-     * Limitación del angulo de la barra por lo que existe una limitación en el esfuerzo del control -> Preguntar a ro
-    Por caracteristicas de la planta:
-     * Se tiene un delay de una muestra, por lo que impone un limite superior en el ancho de banda
-     * No se impone un limite inferior por un polo inestable, por lo que este modelo no considera un limite inferior al ancho de banda
-
-    Para una limitación superior del ancho de banda, tiene la desventaja de imponer un limite superior a la velocidad de respuesta, como también si es necesario una respuesta rápida, una reducción en el margen de fase.
-    
-    Para una limitación inferior del ancho de banda, tiene la desventaja de imponer una velocidad de los polos al controlador, lo cual implica una velocidad mayor pero, a la par, un esfuerzo del control mayor. 
-\end{comment}
 En esta sección se analizará las limitaciones del sistema en cuanto al diseño del controlador, las cuales se dividirán en limitaciones impuestas físicamente por la planta, y limitaciones impuestas por la dinámica de la planta.
 
 Las limitaciones físicas impuestas por la planta son:
@@ -710,8 +656,6 @@ No se impone un limite inferior por un polo inestable, como se mostró en la ide
 
 
 \section{Diseño del controlador}
-\begin{comment}
-\end{comment}
 En esta sección se realizará el diseño de $3$ controladores, un controlador proporcional, un proporcional integral y un proporcional derivativo. Los controladores se diseñan de forma tal que estabilicen el sistema ante una referencia tipo escalón de \SI{10}{\centi\meter} y una perturbación impulsiva de entrada, equivalente a aplicar un ligero golpe al carrito. Partiendo del controlador implementado en forma bilineal y el modelo hallado de la planta completa, se realiza la simulación de la posición para compararla con la medición. Para esto se calcula por un lado la función de sensibilidad complementaria, que relaciona la salida con la señal de referencia del lazo cerrado y la función de sensibilidad a la perturbación de entrada, que relaciona la salida con el ruido agregado a la acción de control. 
 
 Se debe aclarar, que en el caso de la respuesta al escalón de referencia no se posicionó al carro en el centro de la barra, sino que se lo posicionó a \SI{-5}{\centi\meter}, con la intención de permitir un mayor sobrepico necesario para las comparaciones de la simulación con la realidad. Si se lo posicionaba en el centro, con el escalón de referencia de \SI{10}{\centi\meter} sucedía que con un $K_p$ alto el carrito se superaba la limitación de la barra y con un $K_p$ bajo simplemente se acercaba al valor final, sin ningún tipo de oscilación.
@@ -719,9 +663,6 @@ Se debe aclarar, que en el caso de la respuesta al escalón de referencia no se 
 \newpage
 
 \subsection{Control proporcional}
-\begin{comment}
-\end{comment}
-
 Se empezó con valores pequeños de la ganancia proporcional $K_p$, y se fue aumentando el valor hasta ver que la posición del carrito oscile alrededor del punto de referencia, para permitir comparar la frecuencia de la simulación con la respuesta real. Se definió, finalmente, un $K_p = 28$.
 
 Se espera que al ser un controlador proporcional, al aumentar la ganancia $K_p$, el controlador sea más agresivo provocando así un overshoot y consecuentemente una oscilación.
@@ -741,19 +682,11 @@ Se espera que al ser un controlador proporcional, al aumentar la ganancia $K_p$,
     \label{fig:control-proporcional}
 \end{figure}
 
-\begin{comment}
-    Mencionar como se ve el efecto de la friccion estatica cambia la frecuencia en la cual debería oscilar y por eso nuestro modelo no ajusta perfectamente a los datos
-
-    Mecionar como se atribuyó algunas caracteristicas de la friccion al delay, cuando esos efectos no están como pasa en la respuesta impulsiva, el delay representado por padé, impone un cero de fase no minima y se ve ese efecto acá exagerado por la compensación que hicimos en la parte de identificación
-\end{comment}
-
 Se debe mencionar, como se ve en la figura \ref{fig:control-proporcional} y como se fue mencionando a lo largo de este trabajo, que existen efectos de la fricción estática, los cuales afectan a la frecuencia de oscilación, y que representa la diferencia que se ve en la figura. 
 
 A la par de este comentario, en el proceso de identificación, se atribuyó efectos de la fricción estática al delay, utilizando este para que se ajuste mejor al modelo planteado. En el momento cuando los efectos de la ficción estática no aparecen, como es el caso de la subfigura \ref{fig:control-proporcional-impulsivo}, se puede ver cómo el delay, aproximado por Padé, exagera el efecto del cero de fase no mínima que previamente corregía el efecto de la fricción.
 
 \subsection{Control proporcional / integral}
-\begin{comment}
-\end{comment}
 Se empezó con el valor obtenido para el controlador anterior, $K_p = 28$, y valores pequeños de la ganancia del integrador $K_i$. Como el proporcional y el integrador hacen más agresivo al controlador, se tuvo que disminuir la ganancia del proporcional para aumentar el integrador. De nuevo, se buscó que el carrito oscile alrededor del punto de referencia. El agregado del integrador permite lograr un error nulo en estado estacionario, que con el proporcional simple no se puede alcanzar. Se definieron los valores de $K_p = 20$ y un $K_i = 13$.
 
 \begin{figure}[H]
@@ -767,14 +700,10 @@ Se empezó con el valor obtenido para el controlador anterior, $K_p = 28$, y val
     }
     
     \caption{Respuestas utilizando un controlador proporcional / integrador.}
-    \label{fig:control-proporcional-integrador}
 \end{figure}
 
 
 \subsection{Control proporcional / derivativo}
-\begin{comment}  
-\end{comment}
-
 Se empezó con el valor de ganancia proporcional igual al controlador puramente proporcional $K_p = 28$, y valores pequeños de la ganancia del derivativo $K_d$. Como el derivativo reduce la velocidad del control, se tuvo que aumentar el proporcional simultáneamente al aumentar el derivativo, también para poder ver los efectos que este controlador agregaba. Se definieron los valores de $K_p = 33$ y un $K_i = 0.005$.
 
 \begin{figure}[H]
@@ -788,11 +717,6 @@ Se empezó con el valor de ganancia proporcional igual al controlador puramente 
     }
     
     \caption{Respuestas utilizando un controlador proporcional / derivativo.}
-    \label{fig:control-proporcional-derivativo}
 \end{figure}
-
-\renewcommand{\section}[2]{}
-\bibliographystyle{IEEEtran}
-\bibliography{referencias.bib}
 
 \end{document}

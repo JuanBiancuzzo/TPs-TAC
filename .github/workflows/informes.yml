@@ -1,49 +1,80 @@
 name: Subir informes
 
 on:
-    workflow_dispatch:
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-    informe-tp1:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Conseguir repo en la rama del tp1
-              uses: actions/checkout@v4
-              with:
-                ref: tp1
+  informe-tp1:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conseguir repo en la rama del tp1
+        uses: actions/checkout@v4
+        with:
+          ref: tp1
 
-            - name: Crear el pdf
-              uses: addnab/docker-run-action@v3
-              timeout-minutes: 5
-              with:
-                    image: juanbiancuzzo/latex:latest
-                    options: -v ${{ github.workspace }}/Informe:/latex
-                    run: sh -c "/scripts/compile.sh && cp /latex/main.pdf /latex/TP1-Grupo2.pdf"
+      - name: Crear el pdf
+        uses: addnab/docker-run-action@v3
+        timeout-minutes: 5
+        with:
+          image: juanbiancuzzo/latex:latest
+          options: -v ${{ github.workspace }}/Informe:/latex
+          run: sh -c "/scripts/compile.sh && cp /latex/main.pdf /latex/TP1-Grupo2.pdf"
 
-            - name: Subir pdf a github artifacts
-              uses: actions/upload-artifact@v4
-              with:
-                    name: TP1
-                    path: ${{ github.workspace }}/Informe/TP1-Grupo2.pdf
-                    if-no-files-found: warn
-    release:
-        needs: informe-tp1
-        runs-on: ubuntu-latest
+      - name: Subir pdf a github artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TP1
+          path: ${{ github.workspace }}/Informe/TP1-Grupo2.pdf
+          if-no-files-found: warn
 
-        steps:
-          - name: Descargar artifact
-            uses: actions/download-artifact@v4
-            with:
-              name: TP1
-              path: .
+  informe-tp2:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Conseguir repo en la rama del tp2
+        uses: actions/checkout@v4
+        with:
+          ref: tp2
 
-          - name: Subir artifact como release asset
-            uses: softprops/action-gh-release@v2
-            with:
-              tag_name: informe
-              name: "Release informe"
-              files: |
-                **/TP1-Grupo2.pdf
+      - name: Crear el pdf
+        uses: addnab/docker-run-action@v3
+        timeout-minutes: 5
+        with:
+          image: juanbiancuzzo/latex:latest
+          options: -v ${{ github.workspace }}/Informe:/latex
+          run: sh -c "/scripts/compile.sh && cp /latex/main.pdf /latex/TP2-Grupo2.pdf"
+
+      - name: Subir pdf a github artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: TP2
+          path: ${{ github.workspace }}/Informe/TP2-Grupo2.pdf
+          if-no-files-found: warn
+
+  release:
+    needs: [informe-tp1, informe-tp2]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar artifact del TP2
+        uses: actions/download-artifact@v4
+        with:
+          name: TP1
+          path: .
+
+      - name: Descargar artifact del TP2
+        uses: actions/download-artifact@v4
+        with:
+          name: TP2
+          path: .
+
+      - name: Subir artifact como release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: informe
+          name: "Release informe"
+          files: |
+            **/TP1-Grupo2.pdf |
+            **/TP1-Grupo2.pdf

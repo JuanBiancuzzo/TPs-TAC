@@ -58,7 +58,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar artifact del TP2
+      - name: Descargar artifact del TP1
         uses: actions/download-artifact@v4
         with:
           name: TP1
@@ -77,4 +77,4 @@ jobs:
           name: "Release informe"
           files: |
             **/TP1-Grupo2.pdf |
-            **/TP1-Grupo2.pdf
+            **/TP2-Grupo2.pdf

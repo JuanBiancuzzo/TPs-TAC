@@ -7,13 +7,23 @@ permissions:
   contents: write
 
 jobs:
-  informe-tp1:
+  informes:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rama: [tp1, tp2, tp3]
+        include:
+          - rama: tp1
+            nombre: TP1
+          - rama: tp2
+            nombre: TP2
+          - rama: tp3
+            nombre: TP3
     steps:
       - name: Conseguir repo en la rama del tp1
         uses: actions/checkout@v4
         with:
-          ref: tp1
+          ref: ${{ matrix.rama }}
 
       - name: Crear el pdf
         uses: addnab/docker-run-action@v3
@@ -21,40 +31,17 @@ jobs:
         with:
           image: juanbiancuzzo/latex:latest
           options: -v ${{ github.workspace }}/Informe:/latex
-          run: sh -c "/scripts/compile.sh && cp /latex/main.pdf /latex/TP1-Grupo2.pdf"
+          run: sh -c "/scripts/compile.sh && cp /latex/main.pdf /latex/${{ matrix.nombre }}-Grupo2.pdf"
 
       - name: Subir pdf a github artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: TP1
-          path: ${{ github.workspace }}/Informe/TP1-Grupo2.pdf
-          if-no-files-found: warn
-
-  informe-tp2:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Conseguir repo en la rama del tp2
-        uses: actions/checkout@v4
-        with:
-          ref: tp2
-
-      - name: Crear el pdf
-        uses: addnab/docker-run-action@v3
-        timeout-minutes: 5
-        with:
-          image: juanbiancuzzo/latex:latest
-          options: -v ${{ github.workspace }}/Informe:/latex
-          run: sh -c "/scripts/compile.sh && cp /latex/main.pdf /latex/TP2-Grupo2.pdf"
-
-      - name: Subir pdf a github artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: TP2
-          path: ${{ github.workspace }}/Informe/TP2-Grupo2.pdf
+          name: ${{ matrix.nombre }}
+          path: ${{ github.workspace }}/Informe/${{ matrix.nombre }}-Grupo2.pdf
           if-no-files-found: warn
 
   release:
-    needs: [informe-tp1, informe-tp2]
+    needs: informes
     runs-on: ubuntu-latest
 
     steps:
@@ -70,6 +57,12 @@ jobs:
           name: TP2
           path: .
 
+      - name: Descargar artifact del TP3
+        uses: actions/download-artifact@v4
+        with:
+          name: TP3
+          path: .
+
       - name: Subir artifact como release asset
         uses: softprops/action-gh-release@v2
         with:
@@ -78,3 +71,4 @@ jobs:
           files: |
             **/TP1-Grupo2.pdf
             **/TP2-Grupo2.pdf
+            **/TP3-Grupo2.pdf

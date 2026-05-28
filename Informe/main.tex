@@ -1,0 +1,719 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-tabla]{babel}
+
+\usepackage[a4paper,headheight=43pt,
+            scale={0.8,0.8},hoffset=0.5cm,voffset=1cm]{geometry}
+
+\usepackage{verbatim}
+
+% paquetes matemáticos básicos
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{xfrac}
+\usepackage{siunitx}
+\usepackage{enumitem,amssymb}
+
+% tikz
+\usepackage{tikz}
+
+% Código
+\usepackage{listings}
+
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+% gráficos
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subfig}
+\usepackage{listings}
+\captionsetup[table]{font={small,sc},labelfont={small,sc}}
+
+\usepackage[subrefformat=parens]{subcaption} % para colocar subfiguras con sus
+                                             % respectivas referencias,
+                                             % subrefformat es para que ponga
+                                             % parentesis en las subref
+
+\usepackage{appendix}
+\usepackage[output-decimal-marker={,},per-mode=symbol-or-fraction,retain-unity-mantissa=true,detect-all,range-phrase={ -- },list-final-separator={ y }]{siunitx}
+%output-decimal-marker define el separador decimal que se imprime
+%per-mode define la forma que se utiliza para mostrar las unidades del denominador, en este caso elije segun el modo matematico que usa
+%retain-unity-mantissa define si muestra o no la mantisa cuando es 1
+%detect-all detecta la fuente que corresponde al entorno donde se colocan las unidades
+%range-phrase define la palabra para los rangos de numeros
+%list-final-separator define la palabra final de las listas
+
+% paquete para insertar hipervínculos (sólo para el encabezado)
+\usepackage[colorlinks=true,urlcolor=blue,
+            linkcolor=black,linktoc=none,citecolor=black]{hyperref}
+
+\usepackage[twoside]{fancyhdr}		% formato de página
+\usepackage{lastpage}
+% Configuración del encabezado y pie de página
+\fancyhf{} % Limpia todos los campos de encabezado y pie de página
+%\fancyhead[L]{\textbf{TB070 Dispositivos Semiconductores}}
+\fancyfoot{} % Limpia el pie de página para personalizarlo a continuación
+
+\fancyfoot[LE,RO]{\thepage/\pageref{LastPage}}
+\fancyfoot[LE,RO]{\thepage/\pageref{LastPage}}
+
+%*** redefino el comportamiento de los apendices
+\renewcommand{\appendixname}{Apéndices}
+\renewcommand{\appendixtocname}{Apéndices}
+\renewcommand{\appendixpagename}{Apéndices}
+%\renewcommand{\tablename}{Tabla}
+%\renewcommand\spanishtablename{Tabla}
+%\renewcommand{\figurename}{Figura}
+%***
+\pagestyle{fancy}
+
+\usepackage[dvipsnames]{xcolor}
+%\usepackage{todonotes}		% ToDo List
+\usepackage{hyperref}		% formato de página
+\usepackage{tcolorbox}
+
+\DeclareSIUnit\angstrom{\text {Å}}
+
+% \newif\ifturnotarde
+% %     \turnotardetrue
+% \newif\ifturnonoche
+%     \turnonochetrue
+
+\begin{document}
+
+% Defino el formato del encabezado
+%\pagestyle{fancy}
+% \lhead{\includegraphics[width=0.3\textwidth]{lhead}}
+% \chead{
+%   {\scshape Dispositivos Semiconductores}\\
+%   {\footnotesize 1\textsuperscript{er} cuatrimestre de 2023}
+% }
+%\rhead{\includegraphics[width=0.1\textwidth]{rhead}}
+\lfoot{}
+\cfoot{\thepage}
+\rfoot{}
+\begin{titlepage}
+
+\thispagestyle{empty}
+
+\begin{center}
+    \includegraphics[scale=0.3]{fiuba.pdf}\\
+    \large{\textsc{Universidad de Buenos Aires}}\\
+    \large{\textsc{Facultad de Ingeniería}}\\
+    % Modificar año y cuatrimestre
+    \small{Año 2026 - 1\textsuperscript{er} cuatrimestre}
+\end{center}
+
+\vfill
+% Redefino la numeracion de las subsecciones
+\renewcommand{\thesubsection}{\arabic{subsection}}
+
+\begin{center}
+	{\LARGE \underline{\textbf{Taller de Automatización y Control (TA135)}}}\\[0.5cm]
+	{\LARGE \textbf{Trabajo Práctico 2:
+}}\\[0.5cm] 
+    {\LARGE \textbf{Introducción al control digital
+}}\\[0.5cm]
+\end{center}
+
+\begin{table}[H]
+    \centering
+    \begin{tabular}{|l|l|l|}
+    \hline
+    \multicolumn{3}{|c|}{\textbf{Integrantes Grupo N° 2}}    \\ \hline
+    \multicolumn{1}{|l|}{Nombre y Apellido} & Padrón & Correo \\ \hline
+    \multicolumn{1}{|l|}{Juan Ignacio Biancuzzo}    & 106005 & jbiancuzzo@fi.uba.ar \\ \hline
+    \multicolumn{1}{|l|}{Rocio Nicole Heredia Piñon}   & 107621 & rherediap@fi.uba.ar \\ \hline
+    \end{tabular}
+\end{table}
+
+\vfill
+
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+\section{Modelo}
+
+
+\subsection{Variables del sistema}
+En esta sección se analizará el modelado de la planta \textit{Ball and Beam}, que será utilizado a lo largo de todo el trabajo práctico. Como entrada a la planta, se tomará el ancho del pulso PWM comandado al servo ($u$) y como salida la posición del carrito, medida a partir del sensor de distancia ($p$). Para poder resolver el problema de modelado, este se divide en dos partes. Por un lado, se analizará la planta servo-barra ($P_{sb}$), que tomará como entrada la señal comandada al servo y como salida el ángulo de la barra $\theta_b$. Luego, se analiza la planta barra-carrito ($P_{bc}$), que tomará como entrada $\theta_b$ y como salida la posición del carrito. Una vez que se tenga la descripción de cada una de estas, se determina el modelo de la planta completa considerando:
+
+\begin{equation*}
+    P = P_{sb} \cdot P_{bc}
+\end{equation*}
+
+Además, se utiliza un modelado de tipo caja gris, donde se realizará en cada caso un análisis simplificado del modelo físico y matemático para reconocer la forma de la función de transferencia de la planta. Sin conocer los parámetros asociados a este modelo físico, se determinará cada transferencia según que tan bien se ajuste esta a las mediciones, como bien se explicará más adelante. Un modelado de tipo caja blanca también parte de la física de la planta, pero considera que los parámetros asociados se pueden medir, que en este caso resulta muy complejo y en sí el modelo matemático obtenido será una aproximación, no logrará describir por completo la dinámica de la planta. Tampoco se optó por un modelado de tipo caja negra, en el cual se toma al sistema como algo completamente desconocido. En este caso, analizar de forma aproximada la física del modelo no resulta ser un problema tan complejo y permite darle otra interpretación al modelo a la hora de ajustar los polos y ceros para que sea compatible con las mediciones. 
+
+Por último, antes del análisis, se muestra en la figura \ref{fig:sentidos} en qué dirección se definen $\theta_b$, $\theta_m$ y $p$. Tomando que a la derecha se ubica el sensor, $p$ es positivo en dirección al sensor y los ángulos son positivos en sentido antihorario. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{imagenes/sentidos_planta.PNG}
+    \caption{Direcciones definidas para el ángulo de la barra y la posición del carrito.}
+    \label{fig:sentidos}
+\end{figure}
+
+\subsection{Planta servo-barra: modelo físico}
+
+El servo internamente tiene un circuito de control, a partir del cual alimentará al motor DC. Acoplado al eje del motor, generalmente hay un potenciómetro que cambiará su tensión según el ángulo del servo. Este deberá coincidir con el ángulo comandado. Lo que hace el servo es realizar una comparación entre la tensión del potenciómetro y la tensión de referencia, que se logra a partir de una transformación aproximadamente lineal del ancho del pulso que recibe. Ante una diferencia entre el ángulo comandado y el ángulo del servo, se modificará la tensión que alimenta al motor, a través de un controlador proporcional. Por lo que se toma que $V_m = K_1(K_2u-\theta_m)\cdot u$, es decir, la tensión es proporcional al ángulo de referencia y al ángulo del motor. Luego, el motor genera un torque, que a través del tren de engranajes, aparece como un torque aplicado a la barra. Se considera una relación lineal entre el torque del motor y el de la barra, así como entre los ángulos y velocidades angulares. En la práctica, se analizó la variación del ángulo de la barra en función del ángulo del servo, que se explicó y el trabajo anterior, y se observó una relación lineal. Además, se aproxima que el torque se aplica en el centro de la barra, es decir, el eje de rotación. Si el carrito está encima de la barra, también generaría un torque pero dependiente de su posición. Con el fin de simplificar el modelo, ante pequeñas variaciones en posición del carrito alrededor del eje y considerando que este es liviano, se desprecia. Las siguientes ecuaciones describen la dinámica del motor.
+
+\begin{equation*}
+    \begin{cases}
+        V_m - R \cdot I_m - L \cdot \dot{I_m} - e_a = 0 \\
+        e_a = K_b \cdot \omega_m \\
+        T_m = K_t \cdot I_m
+    \end{cases}
+\end{equation*}
+
+Donde $V_m$ es la tensión de alimentación del motor, $I_m$, $R$ y $L$ son la corriente, resistencia e inducatancia de armadura respectivamente y $e_a$ la fuerza electromotriz. $K_t$ y $K_b$ están asociadas a constantes geométricas del motor y del campo. Finalmente, $\omega_m$ y $T_m$ son la velocidad angular y el torque generado por el motor. El torque del motor se relaciona con el torque aplicado a la barra a través de los engranajes, y este torque generará una variación angular siguiente la dinámica que se modela a continuación.
+
+\begin{equation*}
+    \begin{cases}
+        \frac{T_b}{T_m} = \frac{\omega_m}{\omega_b} = \eta \\
+        T_b - B_b \cdot \omega_b = J_b \cdot \dot{\omega_b}
+    \end{cases}
+\end{equation*}
+
+Donde $\eta$ es la relación de reducción entre los torques, $T_b$ y $\omega_b$ el torque y la velocidad angular de la barra y $B_b$ y $J_b$ el rozamiento y la inercia de la barra.
+
+
+Recordando la figura \ref{fig:sentidos}, el ángulo de la barra puede tomar valores entre \SI{-14}{\degree} y \SI{22}{\degree} aproximadamente. Esta es una limitación propia de la planta, asociada a cómo se construyó. Esta limitación se traduce a una limitación en el ángulo del servo y, por ende, en el ancho del PWM comandado al servo. El ángulo del servo puede tomar valores entre \SI{-42}{\degree} y \SI{66}{\degree} y el ancho del PWM entre \SI{1033}{\micro\second} y \SI{2135}{\micro\second}.
+
+Para la representación en espacio de estados de la planta servo-barra se pueden tomar 3 variables de estados: $\theta_b$, $\omega_b = \dot{\theta_b}$ y $I_m$. Por lo que se considera para la identificación que este sistema es de orden 3. La representación en espacio de estados está dada por:
+
+\begin{equation*}
+    \begin{pmatrix}
+        \dot{\theta_b} \\
+        \ddot{\theta_b} \\
+        \dot{I_m}
+    \end{pmatrix} = 
+    \begin{pmatrix}
+        0 & 1 & 0 \\
+        0 & -\frac{B_b}{J_b} & \frac{\eta K_t}{J_b} \\
+        -\frac{\eta K_2}{L} & -\frac{\eta K_b}{L} & -\frac{R}{L}
+    \end{pmatrix}
+    \begin{pmatrix}
+        \theta_b \\
+        \dot{\theta_b} \\
+        I_m
+    \end{pmatrix} +
+    \begin{pmatrix}
+        0 \\
+        0 \\
+        \frac{K_2K_1}{L}
+    \end{pmatrix} u
+    = 
+    \begin{pmatrix}
+        \dot{\theta_b} \\
+        \ddot{\theta_b} \\
+        \dot{I_m}
+    \end{pmatrix} = 
+    \begin{pmatrix}
+        0 & 1 & 0 \\
+        0 & -c_1 & c_2 \\
+        -c_3 & -c_4 & -c_5
+    \end{pmatrix}
+    \begin{pmatrix}
+        \theta_b \\
+        \dot{\theta_b} \\
+        I_m
+    \end{pmatrix} +
+    \begin{pmatrix}
+        0 \\
+        0 \\
+        c_6
+    \end{pmatrix} u
+\end{equation*}
+
+\begin{equation*}
+    \theta_b = 
+    \begin{pmatrix}
+        1 & 0 & 0
+    \end{pmatrix}
+    \begin{pmatrix}
+        \theta_b \\
+        \dot{\theta_b} \\
+        I_m
+    \end{pmatrix}
+    +0\cdot u
+\end{equation*}
+
+Aplicando la transformada de Laplace a condiciones nulas en las ecuaciones halladas, se puede encontrar la función de transferencia. De esta forma se resuelve que:
+
+\begin{equation*}
+    P_{sb} = \frac{\Theta_b(s)}{U(s)} = C (sI - A)^{-1} B + D = \frac{c_2 c_6}{s^3 + (c_1 + c_5) s^2 + (c_2 c_4 + c_1 c_5) s + c_2 c_3}
+\end{equation*}
+
+\subsection{Planta servo barra: identificación}
+
+Para la identificación, se parte de la función de transferencia, que de forma genérica se toma como:
+
+\begin{equation*}
+    P_{sb} = \frac{\Theta_b(s)}{U(s)} = \frac{b_0}{s^3 + a_2 s^2 + a_1 s + a_0}
+\end{equation*}
+
+Esta función de transferencia se pasa a discreta, utilizando backwards difference, donde $s = \frac{z - 1}{Tz}$. Se utiliza este método para poder forzar la forma de la transferencia obtenida en el modelo. Con backwards difference, se logra que el modelo se mantenga estable, a diferencia del forward, donde la planta puede volverse inestable. Se debe tener en cuenta que tendrá polos más lentos, pero estos pueden ajustarse luego de la identificación, por lo que se opta por este método que es más simple que el método bilineal. 
+
+La planta en discreta tendrá la siguiente forma:
+
+\begin{equation*}
+    P_{sb, z} = \frac{\Theta_b(z)}{U(z)} = \frac{\beta_0}{\alpha_3 z^{-3} + \alpha_2 z^{-2} + z^{-1} \alpha_1 + \alpha_0}
+\end{equation*}
+
+Donde:
+
+\begin{equation*}
+    \begin{cases}
+        \beta_0 = b_0 T^3 \\
+        \alpha_3 = -1 \\
+        \alpha_2 = 3 + a_2 T\\
+        \alpha_1 = -3 - 2 a_2 T - a_1 T^2\\
+        \alpha_0 = 1 + a_2 T + a_1 T^2 + a_0 T^3
+    \end{cases}
+\end{equation*}
+
+Con esta transferencia se tiene la siguiente ecuación en diferencias:
+
+\begin{equation*}
+    \theta_b[k] = -\frac{\alpha_3}{\alpha_0}\theta_b[k-3] - \frac{\alpha_2}{\alpha_0}\theta_b[k-2] - \frac{\alpha_1}{\alpha_0}\theta_b[k-1] + \frac{\beta_0}{\alpha_0}u[k]
+\end{equation*}
+
+Hay una relación lineal entre la salida de esta planta y la salida en instantes anteriores, así como la entrada en el instante actual. Con mediciones de la salida y entrada de la planta se puede emplear un método de regresión lineal para encontrar las constantes que mejor ajusten a los datos. Una vez que se calculan estas constantes, se despejan los parámetros de la transferencia en discreta y a partir de estos los de la planta en continua.  
+
+Se toma una primera medición del ángulo de la barra ante un escalón del ancho del PWM. A partir del método de regresión lineal, se obtiene una planta cuya respuesta se grafica a continuación, comparando con la curva real. Esta medición se realiza con el carrito sobre la planta. Además, se toma la señal PWM como la variación respecto de su valor en equilibrio, que es igual a \SI{1472}{\micro\second}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/id_1_servo_barra.png}
+    \caption{Gráfico temporal del ángulo de la barra medido y simulado ante un escalón del ancho del PWM comandado al servo.}
+\end{figure}
+
+Se prueba el modelo ya entrenado con los datos anteriores con una medición distinta para validar su funcionamiento. Se grafica la señal medida y simulada, además de la señal PWM.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/id_2_servo_barra.png}
+    \caption{Gráfico temporal del ángulo de la barra medido y simulado para validar el modelo de la planta.}
+\end{figure}
+
+La planta en discreta y en continua obtenida a partir del modelo fueron:
+
+\begin{equation*}
+    P_{sb,z} = \frac{0.0097}{-z^{-3}+7.071z^{-2}-12.46z^{-1}+6.689}
+\end{equation*}
+
+\begin{equation*}
+    P_{sb} = \frac{1214}{s^3+203.6s^2+3285s+3.798\cdot 10^{4} }
+\end{equation*}
+
+
+En base al análisis previo, pasando de la representación en espacio de estados a la función de transferencia se puede hacer el método inverso y encontrar esta representación con los valores hallados para la transferencia. Existen varias representaciones de estados que se corresponden con esta misma función de transferencia. Como se desconocen los parámetros del modelo, se toma una de estas representaciones.
+
+\begin{equation*}
+    \begin{pmatrix}
+        \dot{\theta_b} \\
+        \ddot{\theta_b} \\
+        \dot{I_m}
+    \end{pmatrix} = 
+    \begin{pmatrix}
+        0 & 1 & 0 \\
+        0 & -1 & 1 \\
+        -3.798\cdot 10^4 & -3082.4 & -202.6
+    \end{pmatrix}
+    \begin{pmatrix}
+        \theta_b \\
+        \dot{\theta_b} \\
+        I_m
+    \end{pmatrix} +
+    \begin{pmatrix}
+        0 \\
+        0 \\
+        1214
+    \end{pmatrix} u
+\end{equation*}
+
+\begin{equation*}
+    \theta_b = 
+    \begin{pmatrix}
+        1 & 0 & 0
+    \end{pmatrix}
+    \begin{pmatrix}
+        \theta_b \\
+        \dot{\theta_b} \\
+        I_m
+    \end{pmatrix}
+    +0\cdot u
+\end{equation*}
+
+\subsection{Planta barra-carrito: modelo físico}
+
+Se considera que la entrada a esta planta es el ángulo de la barra $\theta_b$ y la salida la posición del carrito $p$. Se tiene en cuenta para la dinámica del carrito, la fuerza de rozamiento que será contraria a la dirección de aceleración y la fuerza peso. De esta forma se tiene que:
+
+\begin{equation*}
+    -mg\sin(\theta_b) - B_c\dot{p} = m\ddot{p}
+\end{equation*}
+
+El punto de equilibrio se toma cuando el carrito está en el centro de la barra ($p=0$) y la barra está horizontal ($\theta_b = 0$), con velocidad nula ($\dot{p} = 0$). Para realizar la representación en espacio de estados se toma la linealización alrededor del punto de equilibrio, donde se aproxima $\sin(\theta_b)\approx \theta_b$ y se considera entonces:
+
+\begin{equation*}
+    -mg\theta_b - B_c\dot{p} = m\ddot{p}
+\end{equation*}
+
+Para esta dinámica se toma en cuenta el rozamiento dinámico pero no el estático, que es un factor muy notable en la planta pero es no lineal. Cuando la barra esté un poco inclinada, el modelo va a predecir que el auto va a seguir moviéndose, por más que el rozamiento genere que esté quieto.
+
+La posición se toma positiva en dirección al sensor, como se comentó anteriormente y tendrá limitaciones asociadas al largo de la barra. La posición del carrito podrá tomar valores entre \SI{-20}{\centi\meter} y \SI{19}{\centi\meter} aproximadamente. 
+
+Para la representación en espacio de estados se toma la posición y la velocidad como variables de estado y está dada por:
+
+\begin{equation*}
+    \begin{pmatrix}
+        \dot{p} \\
+        \ddot{p}
+    \end{pmatrix} = 
+    \begin{pmatrix}
+        0 & 1 \\
+        0 & -\frac{B_c}{m}
+    \end{pmatrix}
+    \begin{pmatrix}
+        p \\
+        \dot{p}
+    \end{pmatrix} + 
+    \begin{pmatrix}
+        0 \\
+        -g
+    \end{pmatrix} \theta_b = 
+    \begin{pmatrix}
+        \dot{p} \\
+        \ddot{p}
+    \end{pmatrix} = 
+    \begin{pmatrix}
+        0 & 1 \\
+        0 & -d_1
+    \end{pmatrix}
+    \begin{pmatrix}
+        p \\
+        \dot{p}
+    \end{pmatrix} + 
+    \begin{pmatrix}
+        0 \\
+        -d_2
+    \end{pmatrix} \theta_b
+\end{equation*}
+
+\begin{equation*}
+    p = 
+    \begin{pmatrix}
+        1 & 0
+    \end{pmatrix}
+    \begin{pmatrix}
+        p \\
+        \dot{p}
+    \end{pmatrix} + 
+    0\cdot\theta_b
+\end{equation*}
+
+A partir de esta representación, se puede encontrar la transferencia de la planta definida por:
+
+\begin{equation*}
+    P_{bc} = \frac{\mathcal{P}(s)}{\Theta_b(s)} = \frac{-d_2}{s(s+d_1)}
+\end{equation*}
+
+Se tendrá en cuenta una planta de orden 2 de esta forma para la identificación de la misma. 
+
+\subsection{Planta barra-carrito: identificación}
+
+Partiendo de una planta continua con la siguiente forma, se realiza el mismo análisis que en la planta servo-barra para su identificación.
+
+\begin{equation*}
+    P_{bc} = \frac{b}{s(s+a)}
+\end{equation*}
+
+Se pasa a discreta usando backwards difference para poder aplicar el método de regresión lineal a partir de mediciones realizadas del ángulo de la barra y la posición del carrito.
+
+\begin{equation*}
+    P_{bc,z} = \frac{\beta_0}{\alpha_2z^{-2}+z^{-1}\alpha_1+\alpha_0}
+\end{equation*}
+
+\begin{equation*}
+    \begin{cases}
+        \beta_0 = bT^2 \\
+        \alpha_2 = 1 \\
+        \alpha_1 = -2-aT \\
+        \alpha_0 = 1+aT
+    \end{cases}
+\end{equation*}
+
+Si se hace el despeje de las constantes de la planta continua como función de las constantes de la planta discreta, se dará que $-\alpha_1-\alpha_0 = 1$. Esto viene se forzar un polo en el origen en continua, o bien en el círculo unitario en discreta. Antitransformando, se obtiene la siguiente expresión en el tiempo:
+
+\begin{equation*}
+    \alpha_2p[k-2]+\alpha_1p[k-1]+\alpha_0p[k] = \beta_0\theta_b[k]
+\end{equation*}
+
+Tomando $\alpha_2 = 1$ y $\alpha_1 = -\alpha_0-1$ se llega a:
+
+\begin{equation*}
+    p[k] - p[k-1]  =\frac{1}{\alpha_0}(p[k-1]-p[k-2]) + \frac{\beta_0}{\alpha_0}\theta_b[k]    
+\end{equation*}
+
+Para plantear la regresión lineal, se utilizaron mediciones de la posición del carrito ante escalones del ángulo de la barra, manteniendo al carrito en ella sin controlar. Se obtuvieron dos mediciones, cada una con una variación angular en una dirección diferente. Una se utiliza para entrenar y otra para validar el modelo por regresión lineal. La planta es inestable, por lo que al inclinar ligeramente la barra, ya el carrito se cae y dificulta realizar mediciones. Se probó plantear un controlador proporcional para realizar mediciones de la posición del carrito ante distintas referencias o ante perturbaciones del mismo. Sin embargo, no se lo pudo excitar en un alto rango de frecuencias y no se logró obtener una buena representación de la planta. Ante una muy pequeña inclinación de la barra, el modelo interpretaba que el carrito se caería, lo cual no coincidía con la medición. Y es que este efecto de rozamiento estático no se tomó en cuenta en el modelo lineal. 
+
+A partir del modelo obtenido, se modifica levemente la posición del polo y la ganancia para que ajuste mejor la simulación a las mediciones. En un principio, se obtiene una respuesta como la observada en la figura \ref{fig:id_1_barra_carro}. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/id_1_barra_carro.png}
+    \caption{Posición del carrito medida y simulada ante un escalón negativo del ángulo de la barra.}
+    \label{fig:id_1_barra_carro}
+\end{figure}
+
+Es notorio un efecto de retardo en la respuesta de la planta ante la entrada que no puede ser modelado con la forma de la planta propuesta. Se agrega este efecto de retardo a través de una aproximación de Padé, aumentando el orden de la planta y modificando a su vez la representación en espacio de estados planteada en el análisis teórico. Considerando este delay, la respuesta simulada se puede observar en la figura \ref{fig:id_2_barra_carro}. Se toma un delay de \SI{0.28}{\second}. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/id_2_barra_carro.png}
+    \caption{Posición del carrito medida y simulada ante un escalón negativo del ángulo de la barra.}
+    \label{fig:id_2_barra_carro}
+\end{figure}
+
+Se valida este modelo con otra medición que tiene una variación similar en el ángulo de la barra pero de dirección contraria. Este se muestra en la figura \ref{fig:id_3_barra_carro}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/id_3_barra_carro.png}
+    \caption{Posición del carrito medida y simulada ante un escalón negativo del ángulo de la barra.}
+    \label{fig:id_3_barra_carro}
+\end{figure}
+
+Las plantas obtenidas en discreta y continua con el retardo son:
+
+\begin{equation*}
+    P_{bc,z} = \frac{-0.489}{z^{-2}-8z^{-1}+7} \cdot\frac{z^-1-0.86}{-z^-1+1.14}
+\end{equation*}
+
+\begin{equation*}
+    P_{bc} = \frac{-1222}{s(s+300)}\cdot \frac{1-0.14\cdot s}{1+0.14\cdot s} = \frac{1222.5(s-7.143)}{s(s+300)(s+7.143)}
+\end{equation*}
+
+A partir de la función de transferencia obtenida se puede hallar la representación en espacio de estados de esta planta. Se plantea que dos variables de estado sean la posición y la velocidad del carrito como se desarrolló anteriormente. La tercera variable de estado pierde esta interpretación física y queda determinada forzando estas variables y la relación entrada-salida dada por la transferencia. Se plantea de esta forma las siguientes ecuaciones:
+
+\begin{equation*}
+    \begin{cases}
+        \dot{x_1} = x_2 \\
+        \dot{x_2} = \alpha_1x_1+\alpha_2x_2 + \alpha_3 x_3 + \alpha_4\theta_b \\
+        \dot{x_3} = \beta_1x_1 + \beta_2x_2 + \beta_3 x_3 + \beta_4 \theta_b \\
+        y = x_1
+    \end{cases}
+\end{equation*}
+
+Considerando estas relaciones, se calcula $\dot{y}$, $\ddot{y}$ y $\dddot{y}$ en función de las variables de estado y se reemplaza en la ecuación diferencial obtenida de la transferencia. De esta forma, se obtienen 5 ecuaciones y 8 incógnitas. Se toma una posible solución, resultando en la siguiente representación en espacio de estados.
+
+\begin{equation*}
+    \begin{pmatrix}
+        \dot{p} \\
+        \ddot{p} \\
+        \dot{x_3}
+    \end{pmatrix} = 
+    \begin{pmatrix}
+        0 & 1 & 0\\
+        0 & -300 & -2444 \\
+        0 & 0 & -7.14
+    \end{pmatrix}
+    \begin{pmatrix}
+        p \\
+        x_2 \\
+        x_3
+    \end{pmatrix} + 
+    \begin{pmatrix}
+        0 \\
+        1222 \\
+        7.14
+    \end{pmatrix} \theta_b
+\end{equation*}
+
+\begin{equation*}
+    p = 
+    \begin{pmatrix}
+        1 & 0 & 0
+    \end{pmatrix}
+    \begin{pmatrix}
+        p \\
+        \dot{p} \\
+        x_3
+    \end{pmatrix} + 
+    0\cdot\theta_b
+\end{equation*}
+
+Teniendo una condición inicial para la posición, velocidad y aceleración del carrito así como el ángulo de la barra se puede despejar la condición inicial para $x_3$ y hacer uso de esta representación a condiciones iniciales no nulas correctamente.
+
+\subsection{Planta completa}
+
+Las variables de estado del sistema completo resulta simplemente de apilas las variables de estado de cada sistema, y combinando las matrices detalladas anteriormente de forma correspondiente, resultando en la siguiente representación:
+
+\begin{equation*}
+    \begin{pmatrix}
+        \dot{\theta_b} \\
+        \ddot{\theta_b} \\
+        \dot{I_m} \\
+        \dot{p} \\
+        \ddot{p} \\
+        \dot{x_3}
+    \end{pmatrix} = 
+    \begin{pmatrix}
+        0 & 1 & 0 & 0 & 0 & 0\\
+        0 & -1 & 1 & 0 & 0 & 0\\
+        -3.798\cdot10^4 & -3082.4 & -202.6 & 0 & 0 & 0 \\
+        0 & 0 & 0 & 0 & 1 & 0 \\
+        1222 & 0 & 0 & 0 & -300 & -2444 \\
+        7.14 & 0 & 0 & 0 & 0 & -7.14
+    \end{pmatrix}
+    \begin{pmatrix}
+        \theta_b \\
+        \dot{\theta_b} \\
+        I_m \\
+        p \\
+        \dot{p} \\
+        x_3
+    \end{pmatrix} + 
+    \begin{pmatrix}
+        0 \\
+        0 \\
+        1214 \\
+        0 \\
+        0 \\
+        0
+    \end{pmatrix} u
+\end{equation*}
+
+\begin{equation*}
+    p = 
+    \begin{pmatrix}
+        0 & 0 & 0 & 1 & 0 & 0
+    \end{pmatrix}
+    \begin{pmatrix}
+        \theta_b \\
+        \dot{\theta_b} \\
+        I_m \\
+        p \\
+        \dot{p} \\
+        x_3
+    \end{pmatrix}
+    + 0\cdot u
+\end{equation*}
+
+La función de transferencia completa estará dada por:
+
+\begin{equation*}
+    P = P_{sb}\cdot P_{bc} = \frac{1.48\cdot10^6(s-7.14)}{s(s+300)(s+187.1)(s+7.14)(s^2+16.47s+203)}
+\end{equation*}
+
+\section{Limitaciones de diseño}
+En esta sección se analizará las limitaciones del sistema en cuanto al diseño del controlador, las cuales se dividirán en limitaciones impuestas físicamente por la planta, y limitaciones impuestas por la dinámica de la planta.
+
+Las limitaciones físicas impuestas por la planta son:
+\begin{itemize}
+    \item Un límite en el sobrepico dado por el largo de la barra, de aproximadamente \SI{20}{\centi\meter} desde el centro de la misma.
+    \item Un límite en el rango del control, entre \SI{1033}{\micro\second} y \SI{2135}{\micro\second}.
+\end{itemize}
+
+Las limitaciones dadas por la dinámica de la planta son:
+\begin{itemize}
+    \item Se mostró que existe un delay de \SI{0.28}{\second}, el cual incluye el delay generado por la frecuencia de muestreo. Este impone un límite superior en el ancho de banda, que se ve reflejado en un límite en la velocidad de respuesta.
+    \item El delay produce una reducción en el margen de fase en el momento de necesitar una acción de control rápida.
+\end{itemize}
+
+No se impone un limite inferior por un polo inestable, como se mostró en la identificación de la planta, por lo que este modelo no considera un limite inferior al ancho de banda. Esta limitación hubiese impuesto aumentar la frecuencia de polos, implicando una velocidad de respuesta mínima y un esfuerzo del control mayor.
+
+
+\section{Diseño del controlador}
+En esta sección se realizará el diseño de $3$ controladores, un controlador proporcional, un proporcional integral y un proporcional derivativo. Los controladores se diseñan de forma tal que estabilicen el sistema ante una referencia tipo escalón de \SI{10}{\centi\meter} y una perturbación impulsiva de entrada, equivalente a aplicar un ligero golpe al carrito. Partiendo del controlador implementado en forma bilineal y el modelo hallado de la planta completa, se realiza la simulación de la posición para compararla con la medición. Para esto se calcula por un lado la función de sensibilidad complementaria, que relaciona la salida con la señal de referencia del lazo cerrado y la función de sensibilidad a la perturbación de entrada, que relaciona la salida con el ruido agregado a la acción de control. 
+
+Se debe aclarar, que en el caso de la respuesta al escalón de referencia no se posicionó al carro en el centro de la barra, sino que se lo posicionó a \SI{-5}{\centi\meter}, con la intención de permitir un mayor sobrepico necesario para las comparaciones de la simulación con la realidad. Si se lo posicionaba en el centro, con el escalón de referencia de \SI{10}{\centi\meter} sucedía que con un $K_p$ alto el carrito se superaba la limitación de la barra y con un $K_p$ bajo simplemente se acercaba al valor final, sin ningún tipo de oscilación.
+
+\newpage
+
+\subsection{Control proporcional}
+Se empezó con valores pequeños de la ganancia proporcional $K_p$, y se fue aumentando el valor hasta ver que la posición del carrito oscile alrededor del punto de referencia, para permitir comparar la frecuencia de la simulación con la respuesta real. Se definió, finalmente, un $K_p = 28$.
+
+Se espera que al ser un controlador proporcional, al aumentar la ganancia $K_p$, el controlador sea más agresivo provocando así un overshoot y consecuentemente una oscilación.
+
+\begin{figure}[H]
+    \centering
+    \subfloat[Respuesta al impulso.]{
+        \includegraphics[width=0.48\textwidth]{imagenes/control_P_impulsivo.png}
+        \label{fig:control-proporcional-impulsivo}
+    }
+    \hfill
+    \subfloat[Respuesta al escalón.]{
+        \includegraphics[width=0.48\textwidth]{imagenes/control_P_escalon.png}
+    }
+    
+    \caption{Respuestas utilizando un controlador proporcional.}
+    \label{fig:control-proporcional}
+\end{figure}
+
+Se debe mencionar, como se ve en la figura \ref{fig:control-proporcional} y como se fue mencionando a lo largo de este trabajo, que existen efectos de la fricción estática, los cuales afectan a la frecuencia de oscilación, y que representa la diferencia que se ve en la figura. 
+
+A la par de este comentario, en el proceso de identificación, se atribuyó efectos de la fricción estática al delay, utilizando este para que se ajuste mejor al modelo planteado. En el momento cuando los efectos de la ficción estática no aparecen, como es el caso de la subfigura \ref{fig:control-proporcional-impulsivo}, se puede ver cómo el delay, aproximado por Padé, exagera el efecto del cero de fase no mínima que previamente corregía el efecto de la fricción.
+
+\subsection{Control proporcional / integral}
+Se empezó con el valor obtenido para el controlador anterior, $K_p = 28$, y valores pequeños de la ganancia del integrador $K_i$. Como el proporcional y el integrador hacen más agresivo al controlador, se tuvo que disminuir la ganancia del proporcional para aumentar el integrador. De nuevo, se buscó que el carrito oscile alrededor del punto de referencia. El agregado del integrador permite lograr un error nulo en estado estacionario, que con el proporcional simple no se puede alcanzar. Se definieron los valores de $K_p = 20$ y un $K_i = 13$.
+
+\begin{figure}[H]
+    \centering
+    \subfloat[Respuesta al impulso.]{
+        \includegraphics[width=0.48\textwidth]{imagenes/control_PI_impulsivo.png}
+    }
+    \hfill
+    \subfloat[Respuesta al escalón.]{
+        \includegraphics[width=0.48\textwidth]{imagenes/control_PI_escalon_2.png}
+    }
+    
+    \caption{Respuestas utilizando un controlador proporcional / integrador.}
+\end{figure}
+
+
+\subsection{Control proporcional / derivativo}
+Se empezó con el valor de ganancia proporcional igual al controlador puramente proporcional $K_p = 28$, y valores pequeños de la ganancia del derivativo $K_d$. Como el derivativo reduce la velocidad del control, se tuvo que aumentar el proporcional simultáneamente al aumentar el derivativo, también para poder ver los efectos que este controlador agregaba. Se definieron los valores de $K_p = 33$ y un $K_i = 0.005$.
+
+\begin{figure}[H]
+    \centering
+    \subfloat[Respuesta al impulso.]{
+        \includegraphics[width=0.48\textwidth]{imagenes/control_PD_impulsivo.png}
+    }
+    \hfill
+    \subfloat[Respuesta al escalón.]{
+        \includegraphics[width=0.48\textwidth]{imagenes/control_PD_escalon.png}
+    }
+    
+    \caption{Respuestas utilizando un controlador proporcional / derivativo.}
+\end{figure}
+
+\end{document}

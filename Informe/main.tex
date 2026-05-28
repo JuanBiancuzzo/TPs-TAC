@@ -187,9 +187,9 @@ El servo internamente tiene un circuito de control, a partir del cual alimentar�
 
 \begin{equation*}
     \begin{cases}
-        V _m- R\cdot I_m-L\cdot\dot{I_m}-e_a = 0 \\
-        e_a = K_b\cdot \omega_m \\
-        T_m = K_t\cdot I_m
+        V_m - R \cdot I_m - L \cdot \dot{I_m} - e_a = 0 \\
+        e_a = K_b \cdot \omega_m \\
+        T_m = K_t \cdot I_m
     \end{cases}
 \end{equation*}
 
@@ -198,7 +198,7 @@ Donde $V_m$ es la tensión de alimentación del motor, $I_m$, $R$ y $L$ son la c
 \begin{equation*}
     \begin{cases}
         \frac{T_b}{T_m} = \frac{\omega_m}{\omega_b} = \eta \\
-        T_b - B_b\cdot \omega_b = J_b\cdot \dot{\omega_b}
+        T_b - B_b \cdot \omega_b = J_b \cdot \dot{\omega_b}
     \end{cases}
 \end{equation*}
 
@@ -269,7 +269,7 @@ Para la representación en espacio de estados de la planta servo-barra se pueden
 Aplicando la transformada de Laplace a condiciones nulas en las ecuaciones halladas, se puede encontrar la función de transferencia. De esta forma se resuelve que:
 
 \begin{equation*}
-    P_{sb} = \frac{\Theta_b(s)}{U(s)} = C(sI-A)^{-1}B+D = \frac{c_2c_6}{s^3+(c_1+c_5)s^2+(c_2c_4+c_1c_5)s+c_2c_3}
+    P_{sb} = \frac{\Theta_b(s)}{U(s)} = C (sI - A)^{-1} B + D = \frac{c_2 c_6}{s^3 + (c_1 + c_5) s^2 + (c_2 c_4 + c_1 c_5) s + c_2 c_3}
 \end{equation*}
 
 \subsection{Planta servo barra: identificación}
@@ -277,26 +277,26 @@ Aplicando la transformada de Laplace a condiciones nulas en las ecuaciones halla
 Para la identificación, se parte de la función de transferencia, que de forma genérica se toma como:
 
 \begin{equation*}
-    P_{sb} = \frac{\Theta_b(s)}{U(s)} = \frac{b_0}{s^3+a_2s^2+a_1s+a_0}
+    P_{sb} = \frac{\Theta_b(s)}{U(s)} = \frac{b_0}{s^3 + a_2 s^2 + a_1 s + a_0}
 \end{equation*}
 
-Esta función de transferencia se pasa a discreta, utilizando backwards difference, donde $s = \frac{z-1}{Tz}$. Se utiliza este método para poder forzar la forma de la transferencia obtenida en el modelo. Con backwards difference, se logra que el modelo se mantenga estable, a diferencia del forward, donde la planta puede volverse inestable. Se debe tener en cuenta que tendrá polos más lentos, pero estos pueden ajustarse luego de la identificación, por lo que se opta por este método que es más simple que el método bilineal. 
+Esta función de transferencia se pasa a discreta, utilizando backwards difference, donde $s = \frac{z - 1}{Tz}$. Se utiliza este método para poder forzar la forma de la transferencia obtenida en el modelo. Con backwards difference, se logra que el modelo se mantenga estable, a diferencia del forward, donde la planta puede volverse inestable. Se debe tener en cuenta que tendrá polos más lentos, pero estos pueden ajustarse luego de la identificación, por lo que se opta por este método que es más simple que el método bilineal. 
 
 La planta en discreta tendrá la siguiente forma:
 
 \begin{equation*}
-    P_{sb, z} = \frac{\Theta_b(z)}{U(z)} = \frac{\beta_0}{\alpha_3z^{-3}+\alpha_2z^{-2}+z^{-1}\alpha_1+\alpha_0}
+    P_{sb, z} = \frac{\Theta_b(z)}{U(z)} = \frac{\beta_0}{\alpha_3 z^{-3} + \alpha_2 z^{-2} + z^{-1} \alpha_1 + \alpha_0}
 \end{equation*}
 
 Donde:
 
 \begin{equation*}
     \begin{cases}
-        \beta_0 = b_0T^3 \\
+        \beta_0 = b_0 T^3 \\
         \alpha_3 = -1 \\
-        \alpha_2 = 3+a_2T\\
-        \alpha_1 = -3-2a_2T-a_1T^2\\
-        \alpha_0 = 1+a_2T+a_1T^2+a_0T^3
+        \alpha_2 = 3 + a_2 T\\
+        \alpha_1 = -3 - 2 a_2 T - a_1 T^2\\
+        \alpha_0 = 1 + a_2 T + a_1 T^2 + a_0 T^3
     \end{cases}
 \end{equation*}
 

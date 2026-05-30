@@ -1,6 +1,5 @@
 import serial # Libreria pyserial
 import struct
-import sys
 import threading
 import queue
 
@@ -9,14 +8,22 @@ import numpy as np
 import matplotlib.pyplot as plt
 from enum import IntEnum, auto
 
-TAM_FLOAT = 4
+# Para correrlo ejemplo:
+# python3 comuncacion.py --comm COMM3 -o mediciones/observaciones.csv
 
 class Variable(IntEnum):
     ACCION_DE_CONTROL = 0
-    ANGULO_PLATAFORMA = 1
-    POSICION_CARRO = 2
-    ERROR_EN_POSICION = 3
-    TIEMPO_TRANSCURRIDO_US = 4
+
+    THETA_MEDIDO = 1
+    THETA_ESTIMADO = 2
+
+    OMEGA_MEDIDA = 3
+    OMEGA_ESTIMADA = 4
+
+    POSICION_MEDIDO = 5
+    POSICION_ESTIMADO = 6
+
+    VELOCIDAD_ESTIMADA = 7
 
     CANTIDAD = auto()
 
@@ -30,15 +37,20 @@ class Grafico:
 
     def iniciarPlot(self):
         plt.ion() # Hacemos que sea interactivo el plot aka actualizable
-        self.figure, (axControl, axTheta, axPosicion, axTiempo) = plt.subplots(4, figsize = (10, 10))
+        self.figure = plt.figure(layout="constrained")
+        axis = self.figure.subplot_mosaic([
+            [1, 1],
+            [2, 4],
+            [3, 5],
+        ])
+        axControl, axTheta, axOmega, axPosicion, axVelocidad = tuple([ axis[i] for i in range(5) ])
 
         # Lo inicializamos en ceros, ya que la actualizacion va a agarrar los valores reales
         ceros = np.zeros(self.cantidadPuntos)
         
         # Plot de control
-        midMicros = 1472 # 0 grados
-        minMicrosRango = 1038 - midMicros # -44 grados
-        maxMicrosRango = 2152 - midMicros # 66 grados
+        minMicrosRango = -1038 # -44 grados
+        maxMicrosRango = 2152 # 66 grados
 
         axControl.plot(self.tiempo, minMicrosRango * np.ones(self.cantidadPuntos))
         self.lineaControl, = axControl.plot(self.tiempo, ceros)
@@ -47,28 +59,37 @@ class Grafico:
         axControl.grid(True)
         axControl.set_ylabel("Acción de control")
 
-        # Plot angulo de la plataforma
-        self.lineaTheta, = axTheta.plot(self.tiempo, ceros)
+        # Plot estimacion angulo
+        self.lineaThetaMedida, = axTheta.plot(self.tiempo, ceros, label = "Medicion")
+        self.lineaThetaEstimada, = axTheta.plot(self.tiempo, ceros, label = "Estimada")
 
         axTheta.grid(True)
         axTheta.set_ylabel("Angulo de la plataforma [deg]")
 
-        # Plot posicion
-        self.lineaPosicion, = axPosicion.plot(self.tiempo, ceros, label = "Posicion")
-        self.lineaReferencia, = axPosicion.plot(self.tiempo, ceros, label = "referencia")
+        # Plot estimacion velocidad angular
+        self.lineaOmegaMedida, = axOmega.plot(self.tiempo, ceros, label = "Medicion")
+        self.lineaOmegaEstimada, = axOmega.plot(self.tiempo, ceros, label = "Estimada")
+
+        axTheta.grid(True)
+        axTheta.set_ylabel("Velocidad angular de la plataforma [deg/s]")
+
+        # Plot estimacion posicion
+        self.lineaPosicionMedida, = axPosicion.plot(self.tiempo, ceros, label = "Medicion")
+        self.lineaPosicionEstimada, = axPosicion.plot(self.tiempo, ceros, label = "Estimada")
 
         axPosicion.grid(True)
         axPosicion.set_ylabel("Posicion del carro [cm]")
         axPosicion.legend()
 
-        # Plot tiempo transcurrido
-        self.lineaTiempo, = axTiempo.plot(self.tiempo, ceros)
-        axTiempo.plot(self.tiempo, 1000 * self.periodo * np.ones(self.cantidadPuntos))
+        # Plot estimacion velocidad
+        self.lineaVelocidadMedida, = axVelocidad.plot(self.tiempo, ceros, label = "Medida")
+        self.lineaVelocidadEstimada, = axVelocidad.plot(self.tiempo, ceros, label = "Estimada")
 
-        axTiempo.grid(True)
-        axTiempo.set_ylabel("Tiempo transcurrido [ms]")
+        axPosicion.grid(True)
+        axPosicion.set_ylabel("Velocidad del carro [cm/s]")
+        axPosicion.legend()
 
-        self.figure.suptitle("Identificación", fontsize = 20)
+        self.figure.suptitle("Observadores", fontsize = 20)
 
     def agregarDatos(self, nuevosDatos):
         if self.puntoActual >= self.cantidadPuntos - 1:
@@ -84,12 +105,24 @@ class Grafico:
 
         self.lineaControl.set_ydata(self.datos[Variable.ACCION_DE_CONTROL, :])
 
-        self.lineaTheta.set_ydata(self.datos[Variable.ANGULO_PLATAFORMA, :])
+        self.lineaThetaMedida.set_ydata(self.datos[Variable.THETA_MEDIDO, :])
+        self.lineaThetaEstimada.set_ydata(self.datos[Variable.THETA_ESTIMADO, :])
 
-        self.lineaPosicion.set_ydata(self.datos[Variable.POSICION_CARRO, :])
-        self.lineaReferencia.set_ydata(self.datos[Variable.POSICION_CARRO, :] + self.datos[Variable.ERROR_EN_POSICION, :])
+        self.lineaOmegaMedida.set_ydata(self.datos[Variable.OMEGA_MEDIDA, :])
+        self.lineaOmegaEstimada.set_ydata(self.datos[Variable.OMEGA_ESTIMADA, :])
 
-        self.lineaTiempo.set_ydata(self.datos[Variable.TIEMPO_TRANSCURRIDO_US, :] / 1000)
+        self.lineaPosicionMedida.set_ydata(self.datos[Variable.POSICION_MEDIDO, :])
+        self.lineaPosicionEstimada.set_ydata(self.datos[Variable.POSICION_ESTIMADO, :])
+
+        velocidad_estimada = self.datos[Variable.VELOCIDAD_ESTIMADA, :]
+        velocidad_medida = (velocidad_estimada - np.roll(velocidad_estimada, -1)) / self.periodo
+
+        # Limpiando la derivada
+        velocidad_medida[self.puntoActual] = 0 
+        velocidad_medida[-1] = 0
+
+        self.lineaVelocidadMedida.set_ydata(velocidad_medida)
+        self.lineaVelocidadEstimada.set_ydata(velocidad_estimada)
 
         self.figure.canvas.draw()
         self.figure.canvas.flush_events()
@@ -121,7 +154,7 @@ def parse_args():
     parser.add_argument(
         "-T", "--periodo", 
         type = float, 
-        required = True,
+        default = 0.02,
         help = "Periodo en segundos",
     )
     parser.add_argument(
@@ -138,6 +171,8 @@ def parse_args():
     return parser.parse_args()
 
 def lectura_serial(comm, baudrate, timeout, header, output_queue):
+    TAM_FLOAT = 4
+
     largo_header = len(header)
     header_bytes = [ bytes(b, "utf-8") for b in header ]
     def esperarHeader(ser):

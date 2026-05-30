@@ -94,16 +94,13 @@ class Grafico:
             return actualizar_ejes
         
         # Plot de control
-        minMicrosRango = -1038 # -44 grados
-        maxMicrosRango = 2152 # 66 grados
-
-        axControl.plot(self.tiempo, minMicrosRango * np.ones(self.cantidad_puntos))
+        axControl.plot(self.tiempo, -1038 * np.ones(self.cantidad_puntos))
         lineaControl, = axControl.plot(self.tiempo, ceros)
-        axControl.plot(self.tiempo, maxMicrosRango * np.ones(self.cantidad_puntos))
+        axControl.plot(self.tiempo, 2152 * np.ones(self.cantidad_puntos))
 
         axControl.grid(True)
-        axControl.set_ylabel("PWM [us]")
-        axControl.set_title("Acción de control")
+        axControl.set_title("Acción de control", fontsize = 12)
+        axControl.set_ylabel("PWM [us]", fontsize = 10)
 
         def actualizar_control(datos):
             lineaControl.set_ydata(datos[Variable.ACCION_DE_CONTROL, :])
@@ -113,8 +110,8 @@ class Grafico:
         lineaThetaMedida, = axTheta.plot(self.tiempo, ceros, label = "Medicion")
         lineaThetaEstimada, = axTheta.plot(self.tiempo, ceros, label = "Estimada")
 
-        axTheta.set_title("Angulo de la plataforma")
-        axTheta.set_ylabel("Angulo [deg]")
+        axTheta.set_title("Angulo de la plataforma", fontsize = 12)
+        axTheta.set_ylabel("Angulo [deg]", fontsize = 10)
         axTheta.set_ylim(-15, 22)
 
         def actualizar_angulo(datos):
@@ -126,8 +123,8 @@ class Grafico:
         lineaOmegaMedida, = axOmega.plot(self.tiempo, ceros, label = "Medicion")
         lineaOmegaEstimada, = axOmega.plot(self.tiempo, ceros, label = "Estimada")
 
-        axOmega.set_title("Velocidad angular de la plataforma")
-        axOmega.set_ylabel("Velocidad angular [deg/s]")
+        axOmega.set_title("Velocidad angular de la plataforma", fontsize = 12)
+        axOmega.set_ylabel("Velocidad angular [deg/s]", fontsize = 10)
 
         self.actualizar.append(actualizar_rangos(
             axOmega, lineaOmegaMedida, Variable.OMEGA_MEDIDA, lineaOmegaEstimada, Variable.OMEGA_ESTIMADA,
@@ -137,8 +134,8 @@ class Grafico:
         lineaPosicionMedida, = axPosicion.plot(self.tiempo, ceros, label = "Medicion")
         lineaPosicionEstimada, = axPosicion.plot(self.tiempo, ceros, label = "Estimada")
 
-        axPosicion.set_title("Posicion del carro")
-        axPosicion.set_ylabel("Posicion [cm]")
+        axPosicion.set_title("Posicion del carro", fontsize = 12)
+        axPosicion.set_ylabel("Posicion [cm]", fontsize = 10)
         axPosicion.set_ylim(-20, 20)
 
         def actualizar_posicion(datos):
@@ -150,8 +147,8 @@ class Grafico:
         lineaVelocidadMedida, = axVelocidad.plot(self.tiempo, ceros, label = "Medida")
         lineaVelocidadEstimada, = axVelocidad.plot(self.tiempo, ceros, label = "Estimada")
 
-        axVelocidad.set_title("Velocidad del carro")
-        axVelocidad.set_ylabel("Velocidad [cm/s]")
+        axVelocidad.set_title("Velocidad del carro", fontsize = 12)
+        axVelocidad.set_ylabel("Velocidad [cm/s]", fontsize = 10)
 
         def actualizar_velocidad(datos):
             velocidad_estimada = datos[Variable.POSICION_ESTIMADO, :]
@@ -174,7 +171,7 @@ class Grafico:
             ax.grid(True)
             ax.legend(loc = "upper right")
 
-        self.figure.suptitle("Observador", fontsize = 16)
+        self.figure.suptitle("Observador", fontsize = 14)
 
     def agregarDatos(self, nuevosDatos):
         if self.punto_actual >= self.cantidad_puntos - 1:

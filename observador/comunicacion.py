@@ -102,7 +102,8 @@ class Grafico:
         axControl.plot(self.tiempo, maxMicrosRango * np.ones(self.cantidad_puntos))
 
         axControl.grid(True)
-        axControl.set_ylabel("Acción de control")
+        axControl.set_ylabel("PWM [us]")
+        axControl.set_title("Acción de control")
 
         def actualizar_control(datos):
             lineaControl.set_ydata(datos[Variable.ACCION_DE_CONTROL, :])
@@ -114,10 +115,12 @@ class Grafico:
 
         axTheta.set_title("Angulo de la plataforma")
         axTheta.set_ylabel("Angulo [deg]")
+        axTheta.set_ylim(-15, 22)
 
-        self.actualizar.append(actualizar_rangos(
-            axTheta, lineaThetaMedida, Variable.THETA_MEDIDO, lineaThetaEstimada, Variable.THETA_ESTIMADO,
-        ))
+        def actualizar_angulo(datos):
+            lineaThetaMedida.set_ydata(datos[Variable.THETA_MEDIDO, :])
+            lineaThetaEstimada.set_ydata(datos[Variable.THETA_ESTIMADO, :])
+        self.actualizar.append(actualizar_angulo)
 
         # Plot estimacion velocidad angular
         lineaOmegaMedida, = axOmega.plot(self.tiempo, ceros, label = "Medicion")
@@ -136,10 +139,12 @@ class Grafico:
 
         axPosicion.set_title("Posicion del carro")
         axPosicion.set_ylabel("Posicion [cm]")
+        axPosicion.set_ylim(-20, 20)
 
-        self.actualizar.append(actualizar_rangos(
-            axPosicion, lineaPosicionMedida, Variable.POSICION_MEDIDO, lineaPosicionEstimada, Variable.POSICION_ESTIMADO,
-        ))
+        def actualizar_posicion(datos):
+            lineaPosicionMedida.set_ydata(datos[Variable.POSICION_MEDIDO, :])
+            lineaPosicionEstimada.set_ydata(datos[Variable.POSICION_ESTIMADO, :])
+        self.actualizar.append(actualizar_posicion)
 
         # Plot estimacion velocidad
         lineaVelocidadMedida, = axVelocidad.plot(self.tiempo, ceros, label = "Medida")

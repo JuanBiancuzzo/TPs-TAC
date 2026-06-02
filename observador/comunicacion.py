@@ -195,29 +195,29 @@ class Grafico:
         plt.ioff()
         plt.show()
 
-class TipoArgumento(Enum):
-    SERIAL = "Comunicacion serial"
-    ARCHIVO = "Archivo input"
-
 class Argumentos:
+    class Tipo(Enum):
+        SERIAL = "Comunicacion serial"
+        ARCHIVO = "Archivo input"
+
     def __init__(self, periodo, puntos):
         self.periodo = periodo
         self.puntos = puntos
     
     def serial(self, comm, baudrate, header, timeout):
-        self.tipo = TipoArgumento.SERIAL
+        self.tipo = Argumentos.Tipo.SERIAL
         self.comm = comm
         self.baudrate = baudrate
         self.header = header
         self.timeout = timeout
 
     def archivo_output(self, archivo_output, separador_output):
-        self.tipo = TipoArgumento.SERIAL
+        self.tipo = Argumentos.Tipo.SERIAL
         self.archivo_output = archivo_output
         self.separador_output = separador_output
 
     def archivo_input(self, archivo_input, separador_input):
-        self.tipo = TipoArgumento.ARCHIVO
+        self.tipo = Argumentos.Tipo.ARCHIVO
         self.archivo_input = archivo_input
         self.separador_input = separador_input
 
@@ -352,7 +352,7 @@ def main(args):
     input_queue = queue.Queue()
 
     match args.tipo:
-        case TipoArgumento.SERIAL:
+        case Argumentos.Tipo.SERIAL:
             archivo_queue = queue.Queue()
 
             threading.Thread(target = escribir_archivo, args = (
@@ -364,7 +364,7 @@ def main(args):
                 MultipleQueue(input_queue, archivo_queue),
             )).start()
 
-        case TipoArgumento.ARCHIVO:
+        case Argumentos.Tipo.ARCHIVO:
             threading.Thread(target = lectura_archivo, args = (
                 args.archivo_input, args.separador_input,
                 input_queue,

@@ -34,9 +34,13 @@ const float CENTRO_PLATAFORMA = 15.25f;
 const float RADIANES_2_GRADOS = 57.2958f;
 const float ALFA = 0.07f;
 
-const float K_P = 45.0f;
+const float K_P = 35.0f;
 const float K_I = 0.0f;
-const float K_D = 0.0f;
+const float K_D = 0.005f;
+
+const float inicio = -5;
+const bool escalon = false;
+
 const unsigned int ACCION_EQUILIBRIO = MID_MICROS;
 
 const int PIN_SERVO = 9;
@@ -66,7 +70,6 @@ NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 
 info_control_t datos_control = {
   .err_actual = 0.0f,
-  .err_previo = 0.0f,
   .acumulada_integral = 0.0f, 
   .acumulada_derivativo = 0.0f, 
   .posicion_ref = 0.0f,  
@@ -103,7 +106,7 @@ float avanzar_control(float posicion_medida, info_control_t* control_prev) {
   float error_actual = control_prev->posicion_ref - posicion_medida;
   float factor_integral = control_prev->acumulada_integral + \
     (periodo * (error_actual + control_prev->err_actual)) / 2.0f;
-  float factor_derivativo = 2.0f * frecuencia * (error_actual - control_prev->error_actual) - \
+  float factor_derivativo = 2.0f * frecuencia * (error_actual - control_prev->err_actual) - \
     control_prev->acumulada_derivativo;
 
   float accion_actual = K_P * error_actual + K_I * factor_integral + K_D * factor_derivativo;
@@ -142,6 +145,7 @@ void setup() {
   delay(100);
 }
 
+unsigned long iteraciones = 0;
 void loop() {
   unsigned long tiempo_inicio = micros();
 
@@ -153,6 +157,19 @@ void loop() {
   // Procesamiento de las mediciones
   theta_complementario = calcular_angulo_complementario(theta_complementario, &giroscopio.gyro, &acelerometro.acceleration);
   float posicion_carro = calcular_posicion(tiempo_ida_vuelta_micros);
+
+  if (escalon) {
+    if (iteraciones < 25) {
+       datos_control.posicion_ref = inicio;
+    } else if (iteraciones < 13 * 50) {
+       datos_control.posicion_ref = 10 + inicio;
+    
+    } else if (iteraciones < 14 * 50) {
+       datos_control.posicion_ref = 5 + inicio;
+    } else {
+       datos_control.posicion_ref = inicio;
+    }
+  }
   
   // Calculamos la accion a realizar
   float accion_control = avanzar_control(posicion_carro, &datos_control);
@@ -183,13 +200,14 @@ void enviar_datos(info_enviar_t* info){
   // Enviar header
   Serial.write("abcd");
 
-  const int cant_mediciones = 6;
+  const int cant_mediciones = 7;
   float mediciones[cant_mediciones] = { 
     info->accion_control, 
     (float)MIN_MICROS_RANGO - ACCION_EQUILIBRIO, 
     (float)MAX_MICROS_RANGO - ACCION_EQUILIBRIO,
     info->theta_plataforma, 
-    info->posicion_carro, info->error_posicion,
+    info->posicion_carro, 
+    info->error_posicion,
     (float)info->tiempo_transcurrido,
   };
 

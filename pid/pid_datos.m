@@ -1,8 +1,9 @@
 %% Lectura de datos por simulink
 %  Primero correr el simulink para tener los valores de out
-kp = 45;
+kp = 35;
 ki = 0;
-kd = 0;
+kd = 0.005;
+tipo = "pulso";
 
 datos = table();
 datos.Tiempo = out.tout;
@@ -13,7 +14,7 @@ datos.Error = out.error;
 datos.TiempoTranscurrido = out.tiempoTranscurrido;
 
 for intento = 1:100 
-    archivo = sprintf("identificacion_%d_kp_%.2f_ki_%.2f_kd_%.2f", intento, kp, ki, kd);
+    archivo = sprintf("control_%s_%d_kp_%.2f_ki_%.2f_kd_%.4f", tipo, intento, kp, ki, kd);
     path = sprintf("mediciones/%s.csv", replace(archivo, ".", "_"));
     
     if isfile(path)

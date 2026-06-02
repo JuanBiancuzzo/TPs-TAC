@@ -8,12 +8,19 @@ intento = 3;
 accionEquilibrio = 0;
 corrimiento = 0.91;
 
+%% Datos de lectura - Escalon positivo
+corrimiento = -0.43;
+accionEquilibrio = 0;
 %% Lectura de datos
 path = sprintf("mediciones/identificacion_plataforma_%d.csv", intento);
+%archivo = sprintf("identificacion_completa_positivo");
+%path = sprintf("mediciones/%s.csv", replace(archivo, ".", "_"));
 datos = readtable(path);
 
-tiempoInicio = 1.2;
+%tiempoInicio = 1.2;
+tiempoInicio = 1;
 tiempoFinal = 1000;
+%tiempoFinal = 2.5;
 
 dt = 0.02;
 inv_dt = 50;
@@ -29,7 +36,6 @@ control = (datos.ControlPWM - accionEquilibrio);
 control = control(recorteInicio:recorteFinal);
 plataforma = (datos.Plataforma + corrimiento);
 plataforma = plataforma(recorteInicio:recorteFinal);
-
 largo = size(tiempo);
 largo = largo(1);
 
@@ -56,6 +62,14 @@ beta0 = D(4) * alfa0;
 
 z = tf('z', dt);
 Pd3 = beta0 / (alfa0 + alfa1 * z^(-1) + alfa2 * z^(-2) + alfa3 * z^(-3));
+
+a0 = 1/(dt)^2 * alfa2 + 2/(dt^2) * alfa1 + 3/(dt)^2 * alfa0;
+a1 = -2/dt * alfa2 -3/dt * alfa1 -3/dt * alfa0;
+b0 = beta0 / (dt)^3;
+
+s = tf('s');
+
+Psb = b0 / (s * (s^2 + a1 * s + a0)); 
 
 %% Identificacion con backward difference
 % Orden 2
@@ -85,10 +99,11 @@ b0 = inv_dt^2 * beta0;
 
 s = tf('s');
 P2 = b0 / (s^2 + a1 * s + a0);
-
 %% Verificacion
 
-salida_simulada = lsim(Pd2, control, tiempo);
+%Pprueba = (-0.0014524*z^6) / (z^3*(z-0.2109)*(z^2-1.651*z+0.7089));
+
+salida_simulada = lsim(Pd3, control, tiempo);
 
 subplot(2, 1, 1);
 hold on 

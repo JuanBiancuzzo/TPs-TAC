@@ -108,10 +108,9 @@ class Grafico:
         axTheta.set_ylabel("Angulo [deg]", fontsize = 10)
         axTheta.set_ylim(-15, 22)
 
-        def actualizar_angulo(datos):
-            lineaThetaMedida.set_ydata(datos[Variable.THETA_MEDIDO, :])
-            lineaThetaEstimada.set_ydata(datos[Variable.THETA_ESTIMADO, :])
-        self.actualizar.append(actualizar_angulo)
+        self.actualizar.append(actualizar_rangos(
+            axTheta, lineaThetaMedida, Variable.THETA_MEDIDO, lineaThetaEstimada, Variable.THETA_ESTIMADO,
+        ))
 
         # Plot estimacion velocidad angular
         lineaOmegaMedida, = axOmega.plot(self.tiempo, ceros, label = "Medicion")
@@ -263,7 +262,7 @@ def escribir_archivo(nombre_archivo, separador, periodo, input_queue):
         archivo.write(f"{separador.join(["Tiempo", *nombres])}\n")
 
         for i, nuevos_datos in enumerate(input_queue):
-            archivo.write(f"{separador.join([ periodo * i, *nuevos_datos])}\n")
+            archivo.write(f"{separador.join(map(lambda v: str(v), [ periodo * i, *nuevos_datos]))}\n")
 
 def graficar_datos(periodo, cantidad_puntos, input_queue):
     grafico = Grafico(periodo, cantidad_puntos)
@@ -313,10 +312,10 @@ def main(args):
             archivo_queue = queue.Queue()
 
             threading.Thread(target = escribir_archivo, args = (
-                args.archivo_output, args.separador, args.periodo, IteratableQueue(archivo_queue),
+                args.archivo_output, args.separador_output, args.periodo, IteratableQueue(archivo_queue),
             )).start()
 
-            threading.Thread(target = lectura_archivo, args = (
+            threading.Thread(target = lectura_serial, args = (
                 args.comm, args.baudrate, args.timeout, args.header, 
                 MultipleQueue(input_queue, archivo_queue),
             )).start()

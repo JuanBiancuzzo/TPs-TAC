@@ -10,6 +10,7 @@ En esta sección se muestran todas las ramas en las cuales desarrollamos las pr�
  * [Práctica 5 - HIL](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica5)
  * [Práctica 6 - PID](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica6)
  * [Práctica 7 - Observadores](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica7)
+ * [Práctica 8 - Anidamiento](https://github.com/JuanBiancuzzo/TPs-TAC/tree/practica8)
 
 ## Trabajos prácticos
 En esta sección se muestran las ramas en las cuales se desarrolla los trabajos prácticos

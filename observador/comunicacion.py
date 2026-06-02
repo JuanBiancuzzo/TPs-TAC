@@ -48,11 +48,6 @@ class Variable(IntEnum):
     OMEGA_MEDIDA = 3
     OMEGA_ESTIMADA = 4
 
-    POSICION_MEDIDO = 5
-    POSICION_ESTIMADO = 6
-
-    VELOCIDAD_ESTIMADA = 7
-
     CANTIDAD = auto()
 
 class Grafico:
@@ -70,11 +65,10 @@ class Grafico:
         plt.ion() # Hacemos que sea interactivo el plot aka actualizable
         self.figure = plt.figure(layout = "constrained")
         axis = self.figure.subplot_mosaic([
-            ["Theta", "Posicion"],
-            ["Omega", "Velocidad"],
+            ["Theta", "Omega"],
             ["Control", "Control"],
         ])
-        axControl, axTheta, axOmega, axPosicion, axVelocidad = tuple([ axis[i] for i in ["Control", "Theta", "Omega", "Posicion", "Velocidad"] ])
+        axControl, axTheta, axOmega = tuple([ axis[i] for i in ["Control", "Theta", "Omega"] ])
 
         # Lo inicializamos en ceros, ya que la actualizacion va a agarrar los valores reales
         ceros = np.zeros(self.cantidad_puntos)
@@ -130,44 +124,7 @@ class Grafico:
             axOmega, lineaOmegaMedida, Variable.OMEGA_MEDIDA, lineaOmegaEstimada, Variable.OMEGA_ESTIMADA,
         ))
 
-        # Plot estimacion posicion
-        lineaPosicionMedida, = axPosicion.plot(self.tiempo, ceros, label = "Medicion")
-        lineaPosicionEstimada, = axPosicion.plot(self.tiempo, ceros, label = "Estimada")
-
-        axPosicion.set_title("Posicion del carro", fontsize = 12)
-        axPosicion.set_ylabel("Posicion [cm]", fontsize = 10)
-        axPosicion.set_ylim(-20, 20)
-
-        def actualizar_posicion(datos):
-            lineaPosicionMedida.set_ydata(datos[Variable.POSICION_MEDIDO, :])
-            lineaPosicionEstimada.set_ydata(datos[Variable.POSICION_ESTIMADO, :])
-        self.actualizar.append(actualizar_posicion)
-
-        # Plot estimacion velocidad
-        lineaVelocidadMedida, = axVelocidad.plot(self.tiempo, ceros, label = "Medida")
-        lineaVelocidadEstimada, = axVelocidad.plot(self.tiempo, ceros, label = "Estimada")
-
-        axVelocidad.set_title("Velocidad del carro", fontsize = 12)
-        axVelocidad.set_ylabel("Velocidad [cm/s]", fontsize = 10)
-
-        def actualizar_velocidad(datos):
-            velocidad_estimada = datos[Variable.POSICION_ESTIMADO, :]
-            velocidad_medida = (velocidad_estimada - np.roll(velocidad_estimada, -1)) / self.periodo
-
-            # Limpiando la derivada
-            velocidad_medida[self.punto_actual] = 0 
-            velocidad_medida[-1] = 0
-
-            lineaVelocidadMedida.set_ydata(velocidad_medida)
-            lineaVelocidadEstimada.set_ydata(velocidad_estimada)
-
-            concat = np.concatenate((velocidad_medida, velocidad_estimada))
-            minimo, maximo = np.min(concat), np.max(concat)
-            rango = max(1, maximo - minimo)
-            ax.set_ylim(minimo - 0.05 * rango, maximo + 0.05 * rango)
-        self.actualizar.append(actualizar_velocidad)
-
-        for ax in [axTheta, axOmega, axPosicion, axVelocidad]:
+        for ax in [axTheta, axOmega]:
             ax.grid(True)
             ax.legend(loc = "upper right")
 

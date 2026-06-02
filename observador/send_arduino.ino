@@ -11,11 +11,6 @@ void enviar_datos(info_enviar_t info){
 
     info.omega_medida,
     info.omega_estimada,
-
-    info.posicion_medido,
-    info.posicion_estimado,
-
-    info.velocidad_estimada,
   };
 
   Serial.write((byte*) mediciones, sizeof(mediciones));

@@ -65,9 +65,9 @@ typedef union {
 } mediciones_t;
 
 // CANT_ITERACIONES * periodo_millis / 1000 = tiempo que el servo esta en un angulo
-const int CANT_ITERACIONES = 100; 
-const int CANT_PWMS = 13;
-const float PWMS[CANT_PWMS] = { 0.0f, 200.0f, 0.0f, 200.0f, 0.0f, 200.0f, 0.0f, 200.0f, 0.0f, 200.0f, 0.0f, 200.0f, 0.0f };
+const int CANT_ITERACIONES = 50; 
+const float PWMS[] = { 0, 0, 300, 300, 150, 0, -150, -300, -300, -300, -150, 0, 150, 300, 300, 150, 0, 0, 0 };
+const int CANT_PWMS = sizeof(PWMS) / sizeof(float);
 
 int contador_iteracion = 0, contador_pwm = 0;
 float theta_complementario = 0.0f;
@@ -84,10 +84,10 @@ const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
   { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
   { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
 };
-const float B_d[CANT_VARIABLES] = { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f };
+const float B_d[CANT_VARIABLES] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
+  { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f }, 
+  { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f }, 
 };
 
 const float L[CANT_VARIABLES][CANT_MEDICIONES] = { 

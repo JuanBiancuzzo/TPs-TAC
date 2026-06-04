@@ -5,6 +5,7 @@ void enviar_datos(info_enviar_t info){
 
   float mediciones[] = { 
     info.accion_control,
+    info.referencia,
     
     info.theta_medido,
     info.theta_estimado,

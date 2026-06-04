@@ -3,6 +3,7 @@
 
 typedef struct {
   float accion_control;
+  float referencia;
 
   float theta_medido;
   float theta_estimado;

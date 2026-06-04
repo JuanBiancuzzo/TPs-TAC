@@ -33,8 +33,13 @@ const float ALFA = 0.07;
 
 const int PIN_SERVO = 9;
 
-// const int CANT_ITERACIONES = 100;
-// const float REFERENCIAS
+// CANT_ITERACIONES * periodo_millis / 1000 = tiempo que el servo esta en un angulo
+const int CANT_ITERACIONES = 100;
+const float REFERENCIAS[] = {
+  0,  3,  6,  9,  9,  6,  3,  0, 
+  0, -3, -6, -9, -9, -6, -3,  0, 
+};
+const float NUM_REFERENCIAS = sizeof(REFERENCIAS) / sizeof(float);
 
 #define CANT_VARIABLES 2
 typedef union {
@@ -53,15 +58,8 @@ typedef union {
   float variables[CANT_MEDICIONES];
 } mediciones_t;
 
-#define CANT_CONTROL 1
-typedef union {
-  struct {
-    float pwm;
-  } nombres;
-  float variables[CANT_CONTROL];
-} controles_t;
-
 float theta_complementario = 0;
+int contador_iteracion = 0, contador_referencias = 0;
 
 Adafruit_MPU6050 mpu;
 Servo servo;
@@ -70,9 +68,7 @@ const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
   { 1, 0.02 }, 
   { -2.118, 1.1606 }, 
 };
-const float B_d[CANT_CONTROL][CANT_VARIABLES] = {
-  { 0, 0.0641 },
-};
+const float B_d[CANT_VARIABLES] = { 0, 0.0641 };
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
   { 1, 0 }, 
 };
@@ -82,10 +78,7 @@ const float L[CANT_VARIABLES][CANT_MEDICIONES] = {
   { 50.4383 },
 };
 
-const float K[CANT_VARIABLES][CANT_CONTROL] = { 
-  { 10 }, 
-  { .5 },
-};
+const float K[CANT_VARIABLES] = { 10,  0.5 };
 
 const float F = 953;
 
@@ -96,11 +89,7 @@ variables_estado_t variables_estiamdas = {
   },
 };
 
-controles_t control = { 
-  .nombres = {
-    .pwm = 0,
-  },
-};
+float accion_control = 0;
 
 void mover_servo(unsigned int senial_pwm) {
   if (senial_pwm < MIN_MICROS_RANGO) {
@@ -121,17 +110,15 @@ float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* veloci
   return ALFA * theta_acelerometro + (1 - ALFA) * theta_giroscopio;
 }
 
-controles_t avanzar_control(variables_estado_t x_hat, float pwm_ref) {
-  controles_t accion = { 0 }; 
-  for (int i = 0; i < CANT_CONTROL; i++) {
-    for (int j = 0; j < CANT_VARIABLES; j++) {
-      accion.variables[i] += K[j][i] * x_hat.variables[j] + F * pwm_ref;
-    }
+float avanzar_control(variables_estado_t x_hat, float pwm_ref) {
+  float control = 0;
+  for (int i = 0; i < CANT_VARIABLES; i++) {
+    control += K[i] * x_hat.variables[i] + F * pwm_ref;
   }
-  return accion;
+  return control;
 }
 
-variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_medido, controles_t control) {
+variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_medido, float control) {
   mediciones_t y_hat = { 0 };
   for (int i = 0; i < CANT_MEDICIONES; i++) {
     for (int j = 0; j < CANT_VARIABLES; j++) {
@@ -145,9 +132,7 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
       x_sig_hat.variables[i] += A_d[i][j] * x_hat.variables[j];  
     }
 
-    for (int j = 0; j < CANT_CONTROL; j++) {
-      x_sig_hat.variables[i] += B_d[j][i] * control.variables[j];
-    }
+    x_sig_hat.variables[i] += B_d[i] * control;
 
     for (int j = 0; j < CANT_MEDICIONES; j++) {
       x_sig_hat.variables[i] += L[i][j] * (y_medido.variables[j] - y_hat.variables[j]);  
@@ -183,6 +168,10 @@ void setup() {
 }
 
 void loop() {
+  if (contador_referencias >= NUM_REFERENCIAS) {
+    return;
+  }
+
   unsigned long tiempo_inicio = micros();
 
   // Lectura de los 8 sensores
@@ -198,15 +187,17 @@ void loop() {
     },
   };
 
-  variables_estiamdas = avanzar_observador(variables_estiamdas, mediciones, control);
-  control = avanzar_control(variables_estiamdas, 200);
+  float referencia = REFERENCIAS[contador_referencias];
+  variables_estiamdas = avanzar_observador(variables_estiamdas, mediciones, accion_control);
+  accion_control = avanzar_control(variables_estiamdas, referencia);
 
-  unsigned int pwm_control = ACCION_EQUILIBRIO - (unsigned int)control.nombres.pwm;
+  unsigned int pwm_control = ACCION_EQUILIBRIO - (unsigned int)accion_control;
   mover_servo(pwm_control);
  
   // Enviar datos
   enviar_datos({
-    .accion_control = control.nombres.pwm,
+    .accion_control = accion_control,
+    .referencia = referencia,
 
     .theta_medido = mediciones.nombres.theta,
     .theta_estimado = variables_estiamdas.nombres.theta,
@@ -220,4 +211,10 @@ void loop() {
     unsigned long tiempo_espera = periodo_micros - tiempo_transcurrido;
     delay(tiempo_espera / 1000);
   }
+
+  if (contador_iteracion >= CANT_ITERACIONES) {
+    contador_iteracion = 0;
+    contador_referencias++;
+  }
+  contador_iteracion++;
 }

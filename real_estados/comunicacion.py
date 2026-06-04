@@ -41,12 +41,13 @@ from enum import Enum, IntEnum, auto
 
 class Variable(IntEnum):
     ACCION_DE_CONTROL = 0
+    REFERENCIA = 1
 
-    THETA_MEDIDO = 1
-    THETA_ESTIMADO = 2
+    THETA_MEDIDO = 2
+    THETA_ESTIMADO = 3
 
-    OMEGA_MEDIDA = 3
-    OMEGA_ESTIMADA = 4
+    OMEGA_MEDIDA = 4
+    OMEGA_ESTIMADA = 5
 
     CANTIDAD = auto()
 
@@ -64,11 +65,9 @@ class Grafico:
     def iniciarPlot(self):
         plt.ion() # Hacemos que sea interactivo el plot aka actualizable
         self.figure = plt.figure(layout = "constrained")
-        axis = self.figure.subplot_mosaic([
-            ["Theta", "Omega"],
-            ["Control", "Control"],
-        ])
-        axControl, axTheta, axOmega = tuple([ axis[i] for i in ["Control", "Theta", "Omega"] ])
+        tiposAxis = ["Control", "Theta", "Omega"]
+        axis = self.figure.subplot_mosaic([ [i] for i in tiposAxis ])
+        axControl, axTheta, axOmega = tuple([ axis[i] for i in tiposAxis ])
 
         # Lo inicializamos en ceros, ya que la actualizacion va a agarrar los valores reales
         ceros = np.zeros(self.cantidad_puntos)
@@ -103,6 +102,7 @@ class Grafico:
         # Plot estimacion angulo
         lineaThetaMedida, = axTheta.plot(self.tiempo, ceros, label = "Medicion")
         lineaThetaEstimada, = axTheta.plot(self.tiempo, ceros, label = "Estimada")
+        lineaThetaReferencia, = axTheta.plot(self.tiempo, ceros, label = "Referencia")
 
         axTheta.set_title("Angulo de la plataforma", fontsize = 12)
         axTheta.set_ylabel("Angulo [deg]", fontsize = 10)
@@ -111,6 +111,7 @@ class Grafico:
         def actualizar_angulo(datos):
             lineaThetaMedida.set_ydata(datos[Variable.THETA_MEDIDO, :])
             lineaThetaEstimada.set_ydata(datos[Variable.THETA_ESTIMADO, :])
+            lineaThetaReferencia.set_ydata(datos[Variable.REFERENCIA, :])
         self.actualizar.append(actualizar_angulo)
 
         # Plot estimacion velocidad angular

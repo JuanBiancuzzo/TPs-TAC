@@ -1,6 +1,6 @@
 %% Modelo general del sistema propuesto
+% x = [ theta; omega; corriente; posicion; velocidad; x_3 ]
 orden = 6;
-% x = [ theta; omega; corriente; posicion; velocidad; x_3  ]
 A = [   0    1    0       0    0   0   ;
         0   -1    1       0    0   0   ;
 -3.798e04 -3082.4 -202.6  0    0   0   ;
@@ -16,7 +16,7 @@ D = [ 0; 0 ];
 
 %% Observabilidad
 % Probamos que pasa si solo se mide la posicion
-Cposicon = [ 0 0 0 1 0 0 ];
+Cposicion = [ 0 0 0 1 0 0 ];
 rango = rank(obsv(A, Cposicion)) 
 if rango == orden
     disp("Es observable cuando solo se mide la posicion");

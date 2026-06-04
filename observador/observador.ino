@@ -16,8 +16,8 @@ const unsigned int DIFF_MICROS = MID_MICROS - MIN_MICROS;
 const int MIN_ANGULO = -90; 
 const int MID_ANGULO = 0; 
 const int DIFF_ANGULO = MID_ANGULO - MIN_ANGULO;
-const float SESGO_ANGULO = -1.17;
-const float SESGO_VELOCIDAD = 0;
+const float SESGO_THETA = -1.17;
+const float SESGO_OMEGA = -0.0698;
 
 const int MIN_ANGULO_RANGO = -42; 
 const int MAX_ANGULO_RANGO = 66; 
@@ -99,7 +99,7 @@ const float L[CANT_VARIABLES][CANT_MEDICIONES] = {
   { 000.0000f, 000.0000f },
 };
 
-variables_estado_t variables_estiamdas = { 
+variables_estado_t variables_estimadas = { 
   .nombres = {
     .theta = 0,
     .omega = 0,
@@ -121,10 +121,10 @@ void mover_servo(unsigned int senial_pwm) {
 
 float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* velocidad_angular, sensors_vec_t* aceleracion) {
   // tan(theta) = aceleracion.y / aceleracion.z;
-  float theta_acelerometro = RADIANES_2_GRADOS * atan2(aceleracion->y, aceleracion->z) - SESGO_ANGULO;
+  float theta_acelerometro = RADIANES_2_GRADOS * atan2(aceleracion->y, aceleracion->z) - SESGO_THETA;
 
   // theta_nuevo = theta_previo + omega_x * Delta t
-  float theta_giroscopio = theta_anterior + RADIANES_2_GRADOS * (velocidad_angular->x - SESGO_VELOCIDAD) * ((float)(periodo_millis) / 1000.0f);
+  float theta_giroscopio = theta_anterior + RADIANES_2_GRADOS * (velocidad_angular->x - SESGO_OMEGA) * ((float)(periodo_millis) / 1000.0f);
   
   return ALFA * theta_acelerometro + (1 - ALFA) * theta_giroscopio;
 }
@@ -207,24 +207,24 @@ void loop() {
 
   // Lograr generar una señal del servo
   float accion_control = PWMS[contador_pwm];
-  mover_servo((unsigned int)(accion_control + CONTROL_EQUILIBRIO));
+  mover_servo(CONTROL_EQUILIBRIO - (unsigned int)accion_control);
 
-  variables_estiamdas = avanzar_observador(variables_estiamdas, mediciones, accion_control);
+  variables_estimadas = avanzar_observador(variables_estimadas, mediciones, accion_control);
  
   // Enviar datos
   enviar_datos({
     .accion_control = accion_control,
 
     .theta_medido = mediciones.nombres.theta,
-    .theta_estimado = variables_estiamdas.nombres.theta,
+    .theta_estimado = variables_estimadas.nombres.theta,
 
-    .omega_medida = giroscopio.gyro.x * RADIANES_2_GRADOS,
-    .omega_estimada = variables_estiamdas.nombres.omega,
+    .omega_medida = (giroscopio.gyro.x - SESGO_OMEGA) * RADIANES_2_GRADOS,
+    .omega_estimada = variables_estimadas.nombres.omega,
 
     .posicion_medido = mediciones.nombres.posicion,
-    .posicion_estimado = variables_estiamdas.nombres.posicion,
+    .posicion_estimado = variables_estimadas.nombres.posicion,
 
-    .velocidad_estimada = variables_estiamdas.nombres.velocidad,
+    .velocidad_estimada = variables_estimadas.nombres.velocidad,
   });
 
   if (contador_iteracion >= CANT_ITERACIONES) {

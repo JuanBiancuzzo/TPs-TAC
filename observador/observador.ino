@@ -5,68 +5,20 @@
 #include <Wire.h>
 
 #include "send_arduino.h"
-
-const unsigned long periodo_millis = 20; 
-const unsigned long periodo_micros = periodo_millis * 1000;
-
-const unsigned int MIN_MICROS = 544;
-const unsigned int MID_MICROS = 1472 - 10;  
-const unsigned int DIFF_MICROS = MID_MICROS - MIN_MICROS;
-
-const int MIN_ANGULO = -90; 
-const int MID_ANGULO = 0; 
-const int DIFF_ANGULO = MID_ANGULO - MIN_ANGULO;
-const float SESGO_THETA = -1.17;
-const float SESGO_OMEGA = -0.0698;
-
-const int MIN_ANGULO_RANGO = -42; 
-const int MAX_ANGULO_RANGO = 66; 
-
-// Se esta teniendo en cuenta que la funcion micros descarta los primeros 2 bits
-// por lo que esta division entre enteros no causa ningun efecto sobre el resultado
-const unsigned int MIN_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MIN_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
-// const unsigned int MAX_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MAX_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
-const unsigned int MAX_MICROS_RANGO = 2152;
-
-const float VELOCIDAD_CM_MICROS = 337.4f * 1e-4; // a 10 grados
-const float CENTRO_PLATAFORMA = 15.25f;
-// Lo reducimos lo maximo posible para exitar pasarnos de tiempo en el caso de problemas
-const int MAX_DISTANCE = 50;  
-
-const float RADIANES_2_GRADOS = 57.2958;
-const float ALFA = 0.07;
-
-const unsigned int CONTROL_EQUILIBRIO = MID_MICROS;
+#include "definiciones.h"
+#include "modelos.h"
 
 const int PIN_SERVO = 9;
 const int TRIGGER_PIN  = 11;  
 const int ECHO_PIN     = 12;  
 
-#define CANT_VARIABLES 6
-typedef union {
-  struct {
-    float theta;
-    float omega;
-    float corriente;
-    float posicion;
-    float velocidad;
-    float x_3;
-  } nombres;
-  float variables[CANT_VARIABLES];
-} variables_estado_t;
-
-#define CANT_MEDICIONES 2
-typedef union {
-  struct {
-    float posicion;
-    float theta;
-  } nombres;
-  float variables[CANT_MEDICIONES];
-} mediciones_t;
-
 // CANT_ITERACIONES * periodo_millis / 1000 = tiempo que el servo esta en un angulo
 const int CANT_ITERACIONES = 50; 
-const float PWMS[] = { 0, 0, 300, 300, 150, 0, -150, -300, -300, -300, -150, 0, 150, 300, 300, 150, 0, 0, 0 };
+const float PWMS[] = { 
+  0, 0, 300, 300, 150, 
+  0, -150, -300, -300, -300, -150, 
+  0, 150, 300, 300, 150, 0, 0, 0 
+};
 const int CANT_PWMS = sizeof(PWMS) / sizeof(float);
 
 int contador_iteracion = 0, contador_pwm = 0;
@@ -100,7 +52,7 @@ const float L[CANT_VARIABLES][CANT_MEDICIONES] = {
 };
 
 variables_estado_t variables_estimadas = { 
-  .nombres = {
+  {
     .theta = 0,
     .omega = 0,
     .corriente = 0,
@@ -137,20 +89,20 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
   mediciones_t y_hat = { 0 };
   for (int i = 0; i < CANT_MEDICIONES; i++) {
     for (int j = 0; j < CANT_VARIABLES; j++) {
-      y_hat.variables[i] += C_d[i][j] * x_hat.variables[j];
+      y_hat.vec[i] += C_d[i][j] * x_hat.vec[j];
     }
   }
 
   variables_estado_t x_sig_hat = { 0 };
   for (int i = 0; i < CANT_VARIABLES; i++) {
     for (int j = 0; j < CANT_VARIABLES; j++) {
-      x_sig_hat.variables[i] += A_d[i][j] * x_hat.variables[j];  
+      x_sig_hat.vec[i] += A_d[i][j] * x_hat.vec[j];  
     }
 
-    x_sig_hat.variables[i] += B_d[i] * pwm_control;
+    x_sig_hat.vec[i] += B_d[i] * pwm_control;
 
     for (int j = 0; j < CANT_MEDICIONES; j++) {
-      x_sig_hat.variables[i] += L[i][j] * (y_medido.variables[j] - y_hat.variables[j]);  
+      x_sig_hat.vec[i] += L[i][j] * (y_medido.vec[j] - y_hat.vec[j]);  
     }
   }
 
@@ -199,7 +151,7 @@ void loop() {
   float posicion_carro = calcular_posicion(tiempo_ida_vuelta_micros);
 
   mediciones_t mediciones = { 
-    .nombres = {
+    {
       .posicion = posicion_carro,
       .theta = theta_complementario, 
     },
@@ -215,16 +167,16 @@ void loop() {
   enviar_datos({
     .accion_control = accion_control,
 
-    .theta_medido = mediciones.nombres.theta,
-    .theta_estimado = variables_estimadas.nombres.theta,
+    .theta_medido = mediciones.theta,
+    .theta_estimado = variables_estimadas.theta,
 
     .omega_medida = (giroscopio.gyro.x - SESGO_OMEGA) * RADIANES_2_GRADOS,
-    .omega_estimada = variables_estimadas.nombres.omega,
+    .omega_estimada = variables_estimadas.omega,
 
-    .posicion_medido = mediciones.nombres.posicion,
-    .posicion_estimado = variables_estimadas.nombres.posicion,
+    .posicion_medido = mediciones.posicion,
+    .posicion_estimado = variables_estimadas.posicion,
 
-    .velocidad_estimada = variables_estimadas.nombres.velocidad,
+    .velocidad_estimada = variables_estimadas.velocidad,
   });
 
   if (contador_iteracion >= CANT_ITERACIONES) {

@@ -21,12 +21,6 @@ const float PWMS[] = {
 };
 const int CANT_PWMS = sizeof(PWMS) / sizeof(float);
 
-int contador_iteracion = 0, contador_pwm = 0;
-float theta_complementario = 0.0f;
-
-NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
-Adafruit_MPU6050 mpu;
-Servo servo;
 
 const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
   { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
@@ -49,22 +43,17 @@ const float L[CANT_VARIABLES][CANT_MEDICIONES] = {
   { 000.0000f, 000.0000f },
 };
 
-variables_estado_t variables_estimadas = { 
-  {
-    .theta = 0,
-    .omega = 0,
-    .posicion = 0,
-    .velocidad = 0,
-    .x_3 = 0,
-  },
-};
+NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
+Adafruit_MPU6050 mpu;
+Servo servo;
+
+variables_estado_t variables_estimadas = { 0 };
+
+int contador_iteracion = 0, contador_pwm = 0;
+float theta_complementario = 0;
 
 void mover_servo(unsigned int senial_pwm) {
-  if (senial_pwm < MIN_MICROS_RANGO) {
-    senial_pwm = MIN_MICROS_RANGO;
-  } else if (senial_pwm > MAX_MICROS_RANGO) {
-    senial_pwm = MAX_MICROS_RANGO;
-  }
+  senial_pwm = max(MIN_MICROS_RANGO, min(MAX_MICROS_RANGO, senial_pwm));
   servo.writeMicroseconds(senial_pwm);
 }
 

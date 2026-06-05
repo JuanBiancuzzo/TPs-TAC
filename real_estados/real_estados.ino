@@ -4,32 +4,8 @@
 #include <Wire.h>
 
 #include "send_arduino.h"
-
-const unsigned long periodo_millis = 20; 
-const unsigned long periodo_micros = periodo_millis * 1000;
-
-const unsigned int MIN_MICROS = 544;
-const unsigned int MID_MICROS = 1472 - 10;  
-const unsigned int DIFF_MICROS = MID_MICROS - MIN_MICROS;
-const unsigned int ACCION_EQUILIBRIO = MID_MICROS;
-
-const int MIN_ANGULO = -90; 
-const int MID_ANGULO = 0; 
-const int DIFF_ANGULO = MID_ANGULO - MIN_ANGULO;
-const float SESGO_THETA = -1.17;
-const float SESGO_OMEGA = -0.0698;
-
-const int MIN_ANGULO_RANGO = -42; 
-const int MAX_ANGULO_RANGO = 66; 
-
-// Se esta teniendo en cuenta que la funcion micros descarta los primeros 2 bits
-// por lo que esta division entre enteros no causa ningun efecto sobre el resultado
-const unsigned int MIN_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MIN_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
-// const unsigned int MAX_MICROS_RANGO = MIN_MICROS + (unsigned int) (((MAX_ANGULO_RANGO - MIN_ANGULO) * DIFF_MICROS) / DIFF_ANGULO);
-const unsigned int MAX_MICROS_RANGO = 2152;
-
-const float RADIANES_2_GRADOS = 57.2958;
-const float ALFA = 0.07;
+#include "definiciones.h"
+#include "modelos.h"
 
 const int PIN_SERVO = 9;
 
@@ -41,29 +17,6 @@ const float REFERENCIAS[] = {
 };
 const float NUM_REFERENCIAS = sizeof(REFERENCIAS) / sizeof(float);
 
-#define CANT_VARIABLES 2
-typedef union {
-  struct {
-    float theta;
-    float omega;
-  } nombres;
-  float variables[CANT_VARIABLES];
-} variables_estado_t;
-
-#define CANT_MEDICIONES 1
-typedef union {
-  struct {
-    float theta;
-  } nombres;
-  float variables[CANT_MEDICIONES];
-} mediciones_t;
-
-float theta_complementario = 0;
-int contador_iteracion = 0, contador_referencias = 0;
-
-Adafruit_MPU6050 mpu;
-Servo servo;
-
 const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
   { 1, 0.02 }, 
   { -2.118, 1.1606 }, 
@@ -72,24 +25,21 @@ const float B_d[CANT_VARIABLES] = { 0, 0.0641 };
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
   { 1, 0 }, 
 };
-
 const float L[CANT_VARIABLES][CANT_MEDICIONES] = { 
   { 1.8899 },
   { 50.4383 },
 };
-
 const float K[CANT_VARIABLES] = { 10,  0.5 };
-
 const float F = 953;
 
-variables_estado_t variables_estiamdas = { 
-  .nombres = {
-    .theta = 0,
-    .omega = 0,
-  },
-};
-
+variables_estado_t variables_estiamdas = { 0 };
 float accion_control = 0;
+
+float theta_complementario = 0;
+int contador_iteracion = 0, contador_referencias = 0;
+
+Adafruit_MPU6050 mpu;
+Servo servo;
 
 void mover_servo(unsigned int senial_pwm) {
   if (senial_pwm < MIN_MICROS_RANGO) {
@@ -110,11 +60,14 @@ float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* veloci
   return ALFA * theta_acelerometro + (1 - ALFA) * theta_giroscopio;
 }
 
-float avanzar_control(variables_estado_t x_hat, float pwm_ref) {
+float avanzar_control(variables_estado_t x_hat, float posicion_ref) {
   float control = 0;
+
   for (int i = 0; i < CANT_VARIABLES; i++) {
-    control += K[i] * x_hat.variables[i] + F * pwm_ref;
+    control += K[i] * x_hat.vec[i];
   }
+  control += F * posicion_ref;
+
   return control;
 }
 
@@ -122,20 +75,20 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
   mediciones_t y_hat = { 0 };
   for (int i = 0; i < CANT_MEDICIONES; i++) {
     for (int j = 0; j < CANT_VARIABLES; j++) {
-      y_hat.variables[i] += C_d[i][j] * x_hat.variables[j];
+      y_hat.vec[i] += C_d[i][j] * x_hat.vec[j];
     }
   }
 
   variables_estado_t x_sig_hat = { 0 };
   for (int i = 0; i < CANT_VARIABLES; i++) {
     for (int j = 0; j < CANT_VARIABLES; j++) {
-      x_sig_hat.variables[i] += A_d[i][j] * x_hat.variables[j];  
+      x_sig_hat.vec[i] += A_d[i][j] * x_hat.vec[j];  
     }
 
-    x_sig_hat.variables[i] += B_d[i] * control;
+    x_sig_hat.vec[i] += B_d[i] * control;
 
     for (int j = 0; j < CANT_MEDICIONES; j++) {
-      x_sig_hat.variables[i] += L[i][j] * (y_medido.variables[j] - y_hat.variables[j]);  
+      x_sig_hat.vec[i] += L[i][j] * (y_medido.vec[j] - y_hat.vec[j]);  
     }
   }
 
@@ -182,7 +135,7 @@ void loop() {
   theta_complementario = calcular_angulo_complementario(theta_complementario, &giroscopio.gyro, &acelerometro.acceleration);
 
   mediciones_t mediciones = { 
-    .nombres = {
+    {
       .theta = theta_complementario, 
     },
   };
@@ -199,11 +152,11 @@ void loop() {
     .accion_control = accion_control,
     .referencia = referencia,
 
-    .theta_medido = mediciones.nombres.theta,
-    .theta_estimado = variables_estiamdas.nombres.theta,
+    .theta_medido = mediciones.theta,
+    .theta_estimado = variables_estiamdas.theta,
 
     .omega_medida = (giroscopio.gyro.x - SESGO_OMEGA) * RADIANES_2_GRADOS,
-    .omega_estimada = variables_estiamdas.nombres.omega,
+    .omega_estimada = variables_estiamdas.omega,
   });
 
   unsigned long tiempo_transcurrido = micros() - tiempo_inicio;

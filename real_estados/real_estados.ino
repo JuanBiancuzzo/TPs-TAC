@@ -18,19 +18,20 @@ const float REFERENCIAS[] = {
 const float NUM_REFERENCIAS = sizeof(REFERENCIAS) / sizeof(float);
 
 const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
-  { 1, 0.02 }, 
-  { -2.118, 1.1606 }, 
+  {  1.000, 0.020 }, 
+  { -3.776, 0.640 }, 
 };
-const float B_d[CANT_VARIABLES] = { 0, 0.0641 };
+const float B_d[CANT_VARIABLES] = { 0, 0.1231 };
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
   { 1, 0 }, 
 };
+
 const float L[CANT_VARIABLES][CANT_MEDICIONES] = { 
-  { 1.8899 },
-  { 50.4383 },
+  { 2.0889 },
+  { 71.1652 },
 };
-const float K[CANT_VARIABLES] = { 10,  0.5 };
-const float F = 953;
+const float K[CANT_VARIABLES] = { 35.8825, 10.1650 };
+const float F = 598;
 
 variables_estado_t variables_estiamdas = { 0 };
 float accion_control = 0;

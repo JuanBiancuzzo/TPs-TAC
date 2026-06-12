@@ -1,8 +1,8 @@
 clc
 
-%% Modelo con sobrepico - Intento 1
-poli = [1 8.029 105.9];
-k = 3.206;
+%% Modelo ultima version
+poli = [1 17.98 188.8];
+k = 6.153;
 
 %% Modelo discretizado
 polos = roots(poli);
@@ -17,7 +17,7 @@ polos_d = exp([ -100 -100 ] * T);
 L = acker(A_d', C_d', polos_d)'
 
 %% Diseño de K
-polos_r = exp([-5-9.8i -5+9.8i]* T);
+polos_r = exp([-50 -15]* T);
 K = acker(A_d, B_d, polos_r)
 
 K = [10 0.5];

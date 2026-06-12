@@ -264,7 +264,9 @@ def escribir_archivo(nombre_archivo, separador, periodo, input_queue):
         archivo.write(f"{separador.join(["Tiempo", *nombres])}\n")
 
         for i, nuevos_datos in enumerate(input_queue):
-            archivo.write(f"{separador.join([ periodo * i, *nuevos_datos])}\n")
+            input = [periodo * i, *nuevos_datos]
+            input = map(lambda num: str(num), input)
+            archivo.write(f"{separador.join(input)}\n")
 
 def graficar_datos(periodo, cantidad_puntos, input_queue):
     grafico = Grafico(periodo, cantidad_puntos)
@@ -302,7 +304,6 @@ class MultipleQueue:
             queue.shutdown(immediate)
 
     def join(self):
-
         for queue in self.queues:
             queue.join()
 

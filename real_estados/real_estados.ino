@@ -18,8 +18,8 @@ const float REFERENCIAS[] = {
 const float NUM_REFERENCIAS = sizeof(REFERENCIAS) / sizeof(float);
 
 const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
-  {  1.000, 0.020 }, 
-  { -3.776, 0.640 }, 
+  {  1.0000, 0.0200 }, 
+  { -3.7760, 1.3596 }, 
 };
 const float B_d[CANT_VARIABLES] = { 0, 0.1231 };
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
@@ -30,7 +30,14 @@ const float L[CANT_VARIABLES][CANT_MEDICIONES] = {
   { 2.0889 },
   { 71.1652 },
 };
-const float K[CANT_VARIABLES] = { 35.8825, 10.1650 };
+// const float K[CANT_VARIABLES] = { 
+//   35.8825, 
+//   10.1650,
+// };
+const float K[CANT_VARIABLES] = { 
+  20, 
+  0,
+};
 
 const float F[CANT_REF] = { 598.1 };
 const float H[CANT_REF] = { 0 };
@@ -119,7 +126,7 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
 }
 
 ref_t avanzar_error_referencia(ref_t error_ref, ref_t referencia) {
-
+  return error_ref;
 }
 
 void setup() {

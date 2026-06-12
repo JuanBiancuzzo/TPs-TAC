@@ -28,12 +28,13 @@ archivo = sprintf("identificacion_plataforma_%d", intento);
 %archivo = sprintf("identificacion_completa_%d_kp_%.2f", intento, kp);
 
 %% Lectura de datos
-datos = readtable(sprintf("mediciones/%s.csv", archivo));
+path = sprintf("mediciones/%s.csv", archivo);
+datos = readtable(path);
 
 tiempoInicio = 1;
 tiempoFinal = 3.32;
 %tiempoFinal = 2.5;
-%tiempoFinal = 1000;
+%tiempoFinal = 1.56;
 
 dt = 0.02;
 inv_dt = 50;
@@ -44,10 +45,10 @@ recorteFinal = min(largo(1), ceil(tiempoFinal / dt));
 
 tiempo = (datos.Tiempo - datos.Tiempo(recorteInicio));
 tiempo = tiempo(recorteInicio:recorteFinal);
-senialPwm = (datos.ControlPWM - pwmEquilibrio);
-senialPwm = -senialPwm(recorteInicio:recorteFinal);
-control = (datos.Plataforma - plataformaEquilibrio);
-control = control(recorteInicio:recorteFinal);
+pwm = (datos.ControlPWM - pwmEquilibrio);
+pwm= -pwm(recorteInicio:recorteFinal);
+angulo = (datos.Plataforma - plataformaEquilibrio);
+angulo = angulo(recorteInicio:recorteFinal);
 posicion = (datos.Posicion + corrimiento);
 posicion = posicion(recorteInicio:recorteFinal);
 
@@ -57,103 +58,102 @@ senial_error = datos.Error(recorteInicio:recorteFinal);
 largo = size(tiempo);
 largo = largo(1);
 
-%% SERVO-BARRA ORDEN 3 SIN POLO EN EL ORIGEN
-% senialPwm = -senialPwm;
-orden = 3;
-desplazar = @(lista, k) desplazar_general(lista, k, orden, largo);
+%% SERVO-BARRA ORDEN 2
+delay = 2;
+prueba_largo = largo - delay; % Delay de dos muestras
+orden = 2;
+desplazar = @(lista, k) desplazar_general(lista, k, orden, prueba_largo);
 
-y = desplazar(control, 0);
-X = zeros(largo - orden, 4);
-X(:, 1) = desplazar(control, 3);
-X(:, 2) = desplazar(control, 1);
-X(:, 3) = desplazar(control, 2);
-X(:, 4) = desplazar(senialPwm, 0);
+y = desplazar(angulo, 0);
+X = zeros(prueba_largo - orden, 3);
+X(:, 1) = desplazar(angulo, 2);
+X(:, 2) = desplazar(angulo, 1);
+X(:, 3) = desplazar(circshift(pwm, delay), 0);
 
 D = regresion_lineal(X, y);
 
-alfa0 = 1 / D(1);
+alfa0 = -1 / D(1);
 alfa1 = -D(2) * alfa0;
-alfa2 = -D(3) * alfa0;
-alfa3 = -1;
-beta0 = D(4) * alfa0;
+alfa2 = 1;
+beta0 = D(3) * alfa0;
 
 z = tf('z', dt);
-P_sb_z = beta0 / (alfa0 + alfa1 * z^(-1) + alfa2 * z^(-2) + alfa3 * z^(-3));
+P_sb_z_2 = beta0 / (alfa0 + alfa1 * z^(-1) + alfa2 * z^(-2));
 
-b0 = beta0 / (dt)^3;
-a2 = 3/dt * alfa3 + 1/dt * alfa2;
-a1 = -3/(dt)^2 * alfa3 - 2/(dt)^2 * alfa2 -1/(dt)^2 * alfa1;
-a0 = 1/(dt)^3 * alfa3 + 1/(dt)^3 * alfa2 + 1/(dt)^3 * alfa1 + 1/(dt)^3 * alfa0;
+a1 = -inv_dt * (2 * alfa2 + alfa1);
+a0 = inv_dt^2 * (alfa2 + alfa1 + alfa0);
+b0 = inv_dt^2 * beta0;
 
 s = tf('s');
-P_sb = b0 / (s^3 + a2*s^2 + a1*s + a0); 
+P_sb = b0 / (s^2 + a1*s + a0);
+P_sb_delay = exp(-s * delay * dt) * P_sb;
+
+%% Planta del informe 
+b0 = 1214;
+a0 = 3.798e4;
+a1 = 3285;
+a2 = 203.6;
+
+s = tf('s');
+P_sb_informe = b0 / (s^3 + a2*s^2 + a1*s + a0);
+
 %% VERIFICACION SERVO-BARRA
-salida_simulada = lsim(P_sb, senialPwm, tiempo);
+salida_simulada = lsim(P_sb, pwm, tiempo);
+salida_simulada_informe = lsim(P_sb_informe, pwm, tiempo);
 
 subplot(2, 1, 1);
 hold on 
 grid on
 
 plot(tiempo, salida_simulada, 'b-')
-plot(tiempo, control, 'r-')
+plot(tiempo, salida_simulada_informe, 'm-')
+plot(tiempo, angulo, 'r-')
 xlabel('tiempo[s]')
 ylabel('ángulo[°]')
 title("Ángulo de barra")
-legend("Simulada", "Real")
+legend("Simulada orden 2, con delay", "Simulada orden 3, del informe", "Real")
 
 subplot(2, 1, 2);
 hold on
 grid on
-plot(tiempo, senialPwm, 'm-')
+plot(tiempo, pwm, 'm-')
 xlabel('tiempo[s]')
 ylabel('ancho[us]')
 title("Ancho del PWM")
 
 %% BARRA-CARRITO ORDEN 2 FORZANDO POLO EN EL ORIGEN
+delay = 4; % 6
+prueba_largo = largo - delay; % Delay de dos muestras
 orden = 2;
-desplazar = @(lista, k) desplazar_general(lista, k, orden, largo);
+desplazar = @(lista, k) desplazar_general(lista, k, orden, prueba_largo);
 
 y = desplazar(posicion, 0) - desplazar(posicion, 1);
-X = zeros(largo - orden, 2);
+X = zeros(prueba_largo - orden, 2);
 X(:, 1) = desplazar(posicion, 1) - desplazar(posicion, 2);
-X(:, 2) = desplazar(control, 0);
+X(:, 2) = desplazar(circshift(angulo, delay), 0);
 
 D = regresion_lineal(X, y);
 
-alfa0 = - 1 / D(1);
-alfa1 = 1 - alfa0;
-alfa2 = - 1;
+alfa0 = 1 / D(1);
+alfa1 = -1 - alfa0;
+alfa2 = 1;
 beta0 = alfa0 * D(2);
 
 z = tf('z', dt);
 P_bc_z = beta0 / (alfa0 + alfa1 * z^(-1) + alfa2 * z^(-2));
 
-b0 = - 1/(dt)^2 * beta0;
-a1 = (1 / dt) * (alfa1 + 2 * alfa0);
+b0 = 1 * inv_dt^2 * beta0;
+a1 = -inv_dt * (alfa1 + 2 * alfa2);
+a0 = 0;
 
 s = tf('s');
-P_bc =  b0 / (s * (s - a1));
-%%
-% 200 -1.7
+P_bc =  -b0 / (s^2 - a1*s);
+%P_bc_delay = exp(-s * delay * dt) * P_bc;
+P_bc_delay = (1-(delay*dt*s)/2) / (1+(delay*dt*s)/2) * P_bc;
 
-b0_m = - 2.8 * 436.6;
-a1_m = 300;
-beta0_m = b0_m * (dt)^2;
-alfa0_m = 1 + dt * a1_m;
-alfa1_m = - 2 - dt * a1_m;
-alfa2_m = 1;
-Pbc_zm = beta0_m / (alfa0_m + alfa1_m * z^(-1) + alfa2_m * z^(-2));
-P_bc_m = b0_m / (s * (s + a1_m));
 
-% Pbc = 1.5 * 436.6 / (s * (s + 100));
 %% VERIFICACION BARRA-CARRITO
-% salida_simulada = lsim(Pbc_zm, control, tiempo);
-delay = 0.28;
-Pe_delay = P_bc_m;
-Pe_delay.InputDelay = delay;
-Pdelay = P_bc_m * ((1 - s * (delay / 2)) / (1 + s * (delay / 2)));
-salida_simulada = lsim(Pdelay, control, tiempo);
-%salida_simulada = lsim(P_bc_m, control, tiempo);
+salida_simulada = lsim(2*P_bc_delay, angulo, tiempo);
 
 subplot(2, 1, 1);
 hold on 
@@ -170,18 +170,21 @@ legend("Simulada", "Real")
 subplot(2, 1, 2);
 hold on
 grid on
-plot(tiempo, control, 'm-')
+plot(tiempo, angulo, 'm-')
 xlabel('tiempo[s]')
 ylabel('ángulo[°]')
 title("Ángulo de la barra")
+
 %% VERIFICACION COMPLETA
-salida_simulada = lsim(P_bc_z*P_sb_z, -senialPwm, tiempo);
+P_completo_delay = P_bc_delay * P_sb_delay;
+salida_simulada_completa = lsim(2 * exp(-s * 6 * dt) * P_completo_delay, pwm, tiempo);
+salida_simulada_parcial = lsim(P_sb_delay, pwm, tiempo);
 
 subplot(3, 1, 1);
 hold on 
 grid on
 
-plot(tiempo, salida_simulada, 'b-')
+plot(tiempo, salida_simulada_completa, 'b-')
 plot(tiempo, posicion, 'r-')
 title("Posición del carrito")
 legend("Simulada", "Real")
@@ -189,34 +192,54 @@ legend("Simulada", "Real")
 subplot(3, 1, 2);
 hold on
 grid on
-plot(tiempo, control, 'm-')
+
+plot(tiempo, salida_simulada_parcial, 'b-')
+plot(tiempo, angulo, 'm-')
+title("Angulo de la plataforma")
+legend("Simulada", "Real")
+
 subplot(3, 1, 3);
 hold on
 grid on
-plot(tiempo, -senialPwm, 'b-')
+plot(tiempo, pwm, 'b-')
 
 %% VERIFICACION DE LA PLANTA POR REPRESENTACION EN ESPACIO DE ESTADOS
-A = [   0    1    0        0    0    0     ;
+
+A = [   0       1    0        0    0     ;
+    -188.8  -17.98   0        0    0     ;
+        0       0    0        1    0     ;
+     1222       0    0      -300  -2444  ;
+     7.14       0    0        0   -7.14  ] ;
+ 
+ B = [0; 6.15; 0; 0; 0];
+ C = [0 0 1 0 0];
+ D = 0;
+
+
+Aa = [   0    1    0        0    0    0     ;
         0   -1    1        0    0    0     ;
 -3.798e04 -3082.4 -202.6   0    0    0     ;
         0    0    0        0    1    0     ;
      1222    0    0        0  -300  -2444  ;
      7.14    0    0        0    0   -7.14  ] ;
  
- B = [0; 0; 1214; 0; 0; 0];
- C = [0 0 0 1 0 0];
- D = 0;
-
+ Bb = [0; 0; 1214; 0; 0; 0];
+ Cc = [0 0 0 1 0 0];
+ Dd = 0;
  
  P = ss(A, B, C, D);
+ Pp = ss(Aa, Bb, Cc, Dd);
  
- posicion_sim = lsim(P, senialPwm, tiempo);
+ posicion_sim = lsim(P, pwm, tiempo);
+ posicion_sim_anterior = lsim(Pp, pwm, tiempo);
  
  figure;
  hold on
  grid on
  plot(tiempo, posicion_sim, 'm-');
+ plot(tiempo, posicion_sim_anterior, 'g-');
  plot(tiempo, posicion, 'b-');
+ legend('Sim nueva', 'Sim vieja', 'Real')
 
 %% Funciones
 

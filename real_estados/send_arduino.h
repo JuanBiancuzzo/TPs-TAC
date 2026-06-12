@@ -1,5 +1,5 @@
-#ifndef MATH_UTILS_H
-#define MATH_UTILS_H
+#ifndef SEND_ARDUINO_H
+#define SEND_ARDUINO_H
 
 typedef struct {
   float accion_control;

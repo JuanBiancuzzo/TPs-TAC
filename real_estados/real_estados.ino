@@ -31,9 +31,12 @@ const float L[CANT_VARIABLES][CANT_MEDICIONES] = {
   { 71.1652 },
 };
 const float K[CANT_VARIABLES] = { 35.8825, 10.1650 };
-const float F = 598;
+
+const float F[CANT_REF] = { 598.1 };
+const float H[CANT_REF] = { 0 };
 
 variables_estado_t variables_estiamdas = { 0 };
+ref_t error_ref = { 0 };
 float accion_control = 0;
 
 float theta_complementario = 0;
@@ -61,14 +64,33 @@ float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* veloci
   return ALFA * theta_acelerometro + (1 - ALFA) * theta_giroscopio;
 }
 
-float avanzar_control(variables_estado_t x_hat, float posicion_ref) {
+float avanzar_control(variables_estado_t x_hat) {
   float control = 0;
-
   for (int i = 0; i < CANT_VARIABLES; i++) {
     control += K[i] * x_hat.vec[i];
   }
-  control += F * posicion_ref;
+  return control;
+}
 
+float avanzar_control_referencias(variables_estado_t x_hat, ref_t referencia) {
+  float control = 0;
+  for (int i = 0; i < CANT_VARIABLES; i++) {
+    control += K[i] * x_hat.vec[i];
+  }
+  for (int i = 0; i < CANT_REF; i++) {
+    control += F[i] * referencia.vec[i];
+  }
+  return control;
+}
+
+float avanzar_control_accion_integral(variables_estado_t x_hat, ref_t q) {
+  float control = 0;
+  for (int i = 0; i < CANT_VARIABLES; i++) {
+    control += K[i] * x_hat.vec[i];
+  }
+  for (int i = 0; i < CANT_REF; i++) {
+    control += H[i] * q.vec[i];
+  }
   return control;
 }
 
@@ -94,6 +116,10 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
   }
 
   return x_sig_hat;
+}
+
+ref_t avanzar_error_referencia(ref_t error_ref, ref_t referencia) {
+
 }
 
 void setup() {
@@ -135,15 +161,25 @@ void loop() {
   // Procesamiento de las mediciones
   theta_complementario = calcular_angulo_complementario(theta_complementario, &giroscopio.gyro, &acelerometro.acceleration);
 
-  mediciones_t mediciones = { 
-    {
-      .theta = theta_complementario, 
-    },
-  };
+  mediciones_t mediciones = {{
+    .theta = theta_complementario, 
+  }};
 
-  float referencia = REFERENCIAS[contador_referencias];
+  ref_t referencia = {{
+    .theta = REFERENCIAS[contador_referencias],
+  }};
+
   variables_estiamdas = avanzar_observador(variables_estiamdas, mediciones, accion_control);
-  accion_control = avanzar_control(variables_estiamdas, referencia);
+  error_ref = avanzar_error_referencia(error_ref, referencia);
+
+  // Control sin referencia o referencia nula 
+  accion_control = avanzar_control(variables_estiamdas);
+
+  // Control con referencia con matriz de Feedforward
+  // accion_control = avanzar_control_referencias(variables_estiamdas, referencia);
+
+  // Control con referencia y accion integral
+  // accion_control = avanzar_control_accion_integral(variables_estiamdas, error_ref);
 
   unsigned int pwm_control = ACCION_EQUILIBRIO - (unsigned int)accion_control;
   mover_servo(pwm_control);
@@ -151,12 +187,12 @@ void loop() {
   // Enviar datos
   enviar_datos({
     .accion_control = accion_control,
-    .referencia = referencia,
+    .referencia = referencia.theta,
 
     .theta_medido = mediciones.theta,
     .theta_estimado = variables_estiamdas.theta,
 
-    .omega_medida = (giroscopio.gyro.x - SESGO_OMEGA) * RADIANES_2_GRADOS,
+    .omega_medida = (float)((giroscopio.gyro.x - SESGO_OMEGA) * RADIANES_2_GRADOS),
     .omega_estimada = variables_estiamdas.omega,
   });
 

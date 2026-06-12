@@ -18,4 +18,13 @@ typedef union {
   float vec[CANT_MEDICIONES];
 } mediciones_t;
 
+// Es la q en accion integral
+#define CANT_REF 1
+typedef union {
+  struct {
+    float theta;
+  };
+  float vec[CANT_REF];
+} ref_t;
+
 #endif

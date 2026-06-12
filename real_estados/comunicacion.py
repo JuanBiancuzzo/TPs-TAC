@@ -314,10 +314,10 @@ def main(args):
             archivo_queue = queue.Queue()
 
             threading.Thread(target = escribir_archivo, args = (
-                args.archivo_output, args.separador, args.periodo, IteratableQueue(archivo_queue),
+                args.archivo_output, args.separador_output, args.periodo, IteratableQueue(archivo_queue),
             )).start()
 
-            threading.Thread(target = lectura_archivo, args = (
+            threading.Thread(target = lectura_serial, args = (
                 args.comm, args.baudrate, args.timeout, args.header, 
                 MultipleQueue(input_queue, archivo_queue),
             )).start()

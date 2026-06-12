@@ -72,7 +72,7 @@ float avanzar_control(variables_estado_t x_hat) {
   return control;
 }
 
-float avanzar_control_referencias(variables_estado_t x_hat, ref_t referencia) {
+float avanzar_control_feedforward(variables_estado_t x_hat, ref_t referencia) {
   float control = 0;
   for (int i = 0; i < CANT_VARIABLES; i++) {
     control += K[i] * x_hat.vec[i];
@@ -176,7 +176,7 @@ void loop() {
   accion_control = avanzar_control(variables_estiamdas);
 
   // Control con referencia con matriz de Feedforward
-  // accion_control = avanzar_control_referencias(variables_estiamdas, referencia);
+  // accion_control = avanzar_control_feedforward(variables_estiamdas, referencia);
 
   // Control con referencia y accion integral
   // accion_control = avanzar_control_accion_integral(variables_estiamdas, error_ref);

@@ -1,18 +1,16 @@
 #include "send_arduino.h"
 
+#define TAM_MEDICIONES sizeof(info_enviar_t)
+typedef union {
+  info_enviar_t info;
+  byte vec[TAM_MEDICIONES];
+} datos_t;
+
 void enviar_datos(info_enviar_t info){  
   Serial.write("abcd");
 
-  float mediciones[] = { 
-    info.accion_control,
-    info.referencia,
-    
-    info.theta_medido,
-    info.theta_estimado,
+  datos_t mediciones;
+  mediciones.info = info;
 
-    info.omega_medida,
-    info.omega_estimada,
-  };
-
-  Serial.write((byte*) mediciones, sizeof(mediciones));
+  Serial.write(mediciones.vec, TAM_MEDICIONES);
 }

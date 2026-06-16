@@ -13,11 +13,11 @@ const int TRIGGER_PIN  = 11;
 const int ECHO_PIN     = 12;  
 
 // CANT_ITERACIONES * periodo_millis / 1000 = tiempo que el servo esta en un angulo
-const int CANT_ITERACIONES = 50; 
+const int CANT_ITERACIONES = 25; 
 const float PWMS[] = { 
-  0, 0, 300, 300, 150, 
-  0, -150, -300, -300, -300, -150, 
-  0, 150, 300, 300, 150, 0, 0, 0 
+  0,  200, -100, 0, 
+  -200, 0, 100, 0,
+  200, 0, 0, -100, 0 
 };
 const int CANT_PWMS = sizeof(PWMS) / sizeof(float);
 
@@ -35,11 +35,11 @@ const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = {
 };
 
 const float L[CANT_VARIABLES][CANT_MEDICIONES] = { 
-  { 000.0000f, 000.0000f },
-  { 000.0000f, 000.0000f },
-  { 000.0000f, 000.0000f },
-  { 000.0000f, 000.0000f },
-  { 000.0000f, 000.0000f },
+  { -0.0001  ,   0.3796   },
+  {  0.0001  ,  -3.8507   },
+  { -4.8746  , -13.6088   },
+  {  1.4808e3,   3.6491e3 }, 
+  { -0.0202  ,   1.0362   },
 };
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 

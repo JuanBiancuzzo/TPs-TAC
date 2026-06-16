@@ -21,18 +21,17 @@ const float PWMS[] = {
 };
 const int CANT_PWMS = sizeof(PWMS) / sizeof(float);
 
-
 const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
+  {  1.0000, 0.0200,      0,       0,        0 },
+  { -3.7760, 0.6404,      0,       0,        0 },
+  {       0,      0, 1.0000,  0.0200,        0 },
+  { 24.4400,      0,      0, -5.0000, -48.8800 },
+  {  0.1428,      0,      0,       0,   0.8572 },
 };
-const float B_d[CANT_VARIABLES] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+const float B_d[CANT_VARIABLES] = { 0, 0.1230, 0, 0, 0 };
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
-  { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f }, 
-  { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f }, 
+  { 0, 0, 1, 0, 0 }, 
+  { 1, 0, 0, 0, 0 }, 
 };
 
 const float L[CANT_VARIABLES][CANT_MEDICIONES] = { 
@@ -145,7 +144,7 @@ void loop() {
 
   // Lograr generar una señal del servo
   float accion_control = PWMS[contador_pwm];
-  mover_servo(CONTROL_EQUILIBRIO - (unsigned int)accion_control);
+  mover_servo(CONTROL_EQUILIBRIO + (unsigned int)accion_control);
 
   variables_estimadas = avanzar_observador(variables_estimadas, mediciones, accion_control);
  

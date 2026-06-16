@@ -7,14 +7,29 @@ clc
 orden = 5;
 dt = 0.02;
 
-A = [
-     0.00    1.00  0     0       0.00; 
-  -188.80  -17.98  0     0       0.00; 
-     0.00    0.00  0     1       0.00; 
-  1222.00    0.00  0  -300   -2444.00; 
-     7.14    0.00  0     0      -7.14
+A_sb = [
+       0     1;
+    -188.8 -17.98
 ];
-B = [0; 6.15; 0; 0; 0];
+B_sb = [ 0; 6.15 ];
+C_sb = [ 1 0 ];
+
+a = 446.4;
+b = -1583.6;
+c_inv = 2/0.28;
+A_bc = [
+    0  1    0;
+    0 -a  2*b;
+    0  0 -c_inv
+];
+B_bc = [ 0; -b; c_inv ];
+C_bc = [ 1 0 0 ];
+
+A = [
+   A_sb       zeros(2, 3);
+   B_bc*C_sb  A_bc
+];
+B = [ B_sb; 0; 0; 0 ];
 
 C = [ 
     0  0  1  0  0;
@@ -54,8 +69,15 @@ else
     disp("No es observable el sistema");
 end
 
+
 %% Luenberger 
 % No puede tener más de 2 (rank(C_d)) polos repetidos
-polos = [ -25 -20 -50 -30 -30 ];
-L = place(A_d', C_d', exp(polos * dt))'
+clc
+polos = [ -50 -50 -350 -350 -400 ];
+L = place(A_d', C_d', exp(polos * dt))';
+
+clc
+for i = 1:5
+    disp(L(i, 1:2))
+end
 

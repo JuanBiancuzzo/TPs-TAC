@@ -7,6 +7,13 @@ corrimiento = 0;
 archivo = sprintf("identificacion_completa_%d_kp_%.2f", intento, kp);
 archivo = replace(archivo, ".", "_");
 
+%% Omega
+intento = 1;
+pwmEquilibrio = 0;
+plataformaEquilibrio = 0.5;
+corrimiento = 0;
+archivo = sprintf("omega_%i", intento);
+
 %% Datos de lectura - Positivo
 pwmEquilibrio = 0;
 plataformaEquilibrio = 0.43;
@@ -31,11 +38,8 @@ archivo = sprintf("identificacion_plataforma_%d", intento);
 path = sprintf("mediciones/%s.csv", archivo);
 datos = readtable(path);
 
-tiempoInicio = 1;
-tiempoFinal = 3.32;
-%tiempoFinal = 2.5;
-%tiempoFinal = 1.56;
-
+tiempoInicio = 0;
+tiempoFinal = 4;
 dt = 0.02;
 inv_dt = 50;
 
@@ -46,14 +50,11 @@ recorteFinal = min(largo(1), ceil(tiempoFinal / dt));
 tiempo = (datos.Tiempo - datos.Tiempo(recorteInicio));
 tiempo = tiempo(recorteInicio:recorteFinal);
 pwm = (datos.ControlPWM - pwmEquilibrio);
-pwm= -pwm(recorteInicio:recorteFinal);
-angulo = (datos.Plataforma - plataformaEquilibrio);
+pwm = pwm(recorteInicio:recorteFinal);
+angulo = (datos.ThetaMedido - plataformaEquilibrio);
 angulo = angulo(recorteInicio:recorteFinal);
-posicion = (datos.Posicion + corrimiento);
+posicion = (datos.PosicionMedido + corrimiento);
 posicion = posicion(recorteInicio:recorteFinal);
-
-senial_servo = datos.ControlPWM(recorteInicio:recorteFinal);
-senial_error = datos.Error(recorteInicio:recorteFinal);
 
 largo = size(tiempo);
 largo = largo(1);
@@ -122,50 +123,64 @@ ylabel('ancho[us]')
 title("Ancho del PWM")
 
 %% BARRA-CARRITO ORDEN 2 FORZANDO POLO EN EL ORIGEN
-delay = 4; % 6
+delay = 8; % 6
 prueba_largo = largo - delay; % Delay de dos muestras
 orden = 2;
 desplazar = @(lista, k) desplazar_general(lista, k, orden, prueba_largo);
 
-y = desplazar(posicion, 0) - desplazar(posicion, 1);
-X = zeros(prueba_largo - orden, 2);
-X(:, 1) = desplazar(posicion, 1) - desplazar(posicion, 2);
-X(:, 2) = desplazar(circshift(angulo, delay), 0);
+y = desplazar(posicion, 0);
+X = zeros(prueba_largo - orden, 3);
+X(:, 1) = desplazar(posicion, 2);
+X(:, 2) = desplazar(posicion, 1);
+X(:, 3) = desplazar(circshift(angulo, delay), 0);
 
 D = regresion_lineal(X, y);
 
-alfa0 = 1 / D(1);
-alfa1 = -1 - alfa0;
+alfa0 = -1 / D(1);
+alfa1 = -D(2) * alfa0;
 alfa2 = 1;
-beta0 = alfa0 * D(2);
+beta0 = D(3) * alfa0;
 
 z = tf('z', dt);
 P_bc_z = beta0 / (alfa0 + alfa1 * z^(-1) + alfa2 * z^(-2));
 
-b0 = 1 * inv_dt^2 * beta0;
-a1 = -inv_dt * (alfa1 + 2 * alfa2);
-a0 = 0;
+a1 = inv_dt * (2 * alfa2 + alfa1);
+a0 = inv_dt^2 * (alfa2 + alfa1 + alfa0);
+b0 = -inv_dt^2 * beta0;
 
 s = tf('s');
-P_bc =  -b0 / (s^2 - a1*s);
-%P_bc_delay = exp(-s * delay * dt) * P_bc;
-P_bc_delay = (1-(delay*dt*s)/2) / (1+(delay*dt*s)/2) * P_bc;
+P_bc = b0 / (s^2 + a1*s + a0);
+P_bc_delay = (1-(delay*dt*s)/2) / (1+(delay*dt*s)/2)  * P_bc;
 
+%% Modelo previo
+s = tf('s');
+%P_bc_prev = -385.3 / (s^2 + 168.7 * s);
+P_bc_prev = -1222 / (s*(s+300));
+P_bc_delay_prev = exp(-s * 0.28) * P_bc_prev;
+
+%% Modelo propuesto
+s = tf('s');
+P_bc_m = -300 / ((s + 50) * (s + 1));
+P_bc_delay_m = (1-(delay*dt*s)/2) / (1+(delay*dt*s)/2)  * P_bc_m;
 
 %% VERIFICACION BARRA-CARRITO
-salida_simulada = lsim(2*P_bc_delay, angulo, tiempo);
-
+salida_simulada = lsim(P_bc_delay, angulo, tiempo);
+salida_simulada_prev = lsim(P_bc_delay_prev, angulo, tiempo);
+salida_simulada_m = lsim(P_bc_delay_m, angulo, tiempo);
+ 
 subplot(2, 1, 1);
 hold on 
 grid on
 
-plot(tiempo, salida_simulada, 'b-')
+plot(tiempo, salida_simulada_m, 'b-')
+plot(tiempo, salida_simulada_prev, 'g-')
+plot(tiempo, salida_simulada, 'm-')
 plot(tiempo, posicion, 'r-')
 xlabel('tiempo[s]')
 ylabel('posicion[cm]')
 
 title("Posición del carrito")
-legend("Simulada", "Real")
+legend("Simulada modificada", "Simulacion previa", "Simulada", "Real")
 
 subplot(2, 1, 2);
 hold on

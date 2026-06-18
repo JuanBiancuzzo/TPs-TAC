@@ -14,8 +14,8 @@ A_sb = [
 B_sb = [ 0; 6.15 ];
 C_sb = [ 1 0 ];
 
-a = 446.4;
-b = -1583.6;
+a = 300; 
+b = -1222; 
 c_inv = 2/0.28;
 A_bc = [
     0  1    0;
@@ -36,10 +36,15 @@ C = [
     1  0  0  0  0
 ];
 
-A_d = eye(orden) + dt * A
-B_d = dt * B
-C_d = C
-D_d = 0
+sys = ss(A, B, C, 0);
+sys_d = c2d(sys, dt, 'zoh');
+
+A_d = sys_d.A;
+mostrar_matriz(A_d, "A_d");
+B_d = sys_d.B;
+mostrar_matriz(B_d', "B_d");
+C_d = sys_d.C;
+mostrar_matriz(C_d, "C_d");
 
 %% Pruebas
 
@@ -72,12 +77,23 @@ end
 
 %% Luenberger 
 % No puede tener más de 2 (rank(C_d)) polos repetidos
-clc
-polos = [ -50 -50 -350 -350 -400 ];
+polos = [ -40 -40 -20 -25 -30 ];
 L = place(A_d', C_d', exp(polos * dt))';
+mostrar_matriz(L, "L");
 
-clc
-for i = 1:5
-    disp(L(i, 1:2))
+%% Mostrar matriz
+function [] = mostrar_matriz(matriz, nombre)
+    tamanio = size(matriz);
+    fprintf("%s = {\n", nombre);
+    for i = 1:tamanio(1)
+        fprintf("  { ");
+        for j = 1:tamanio(2)
+            if j == tamanio, delimitador = ""; else, delimitador = ", "; end
+            
+            fprintf("%+.4e%s", matriz(i, j), delimitador);
+        end
+        fprintf("}, \n");
+    end
+    fprintf("}\n");
 end
 

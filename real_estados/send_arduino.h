@@ -3,6 +3,8 @@
 
 typedef struct {
   float accion_control;
+  float referencia_posicion;
+  float referencia_theta;
 
   float theta_medido;
   float theta_estimado;
@@ -14,6 +16,8 @@ typedef struct {
   float posicion_estimado;
 
   float velocidad_estimada;
+
+  float tiempo_transcurrido;
 } info_enviar_t;
 
 void enviar_datos(info_enviar_t info);

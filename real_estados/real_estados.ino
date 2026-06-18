@@ -9,39 +9,53 @@
 #include "modelos.h"
 
 const int PIN_SERVO = 9;
-const int TRIGGER_PIN = 11;  
-const int ECHO_PIN    = 12;  
+const int TRIGGER_PIN  = 11;  
+const int ECHO_PIN     = 12;  
+
+// CANT_ITERACIONES * periodo_millis / 1000 = tiempo que el servo esta en un angulo
+const int CANT_ITERACIONES = 100; 
+const float REFERENCIAS_POSICION[] = { 0 };
+const float REFERENCIAS_THETA[] = { 0 };
+
+const int NUM_REFERENCIAS_POSICION = sizeof(REFERENCIAS_POSICION) / sizeof(float);
+const int NUM_REFERENCIAS_THETA = sizeof(REFERENCIAS_THETA) / sizeof(float);
+const int NUM_REFERENCIAS = min(NUM_REFERENCIAS_POSICION, NUM_REFERENCIAS_THETA);
 
 const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
-  { 000.0000f, 000.0000f, 000.0000f, 000.0000f, 000.0000f }, 
+  { +9.6659e-01, +1.6589e-02, +0.0000e+00, +0.0000e+00, +0.0000e+00}, 
+  { -3.1320e+00, +6.6833e-01, +0.0000e+00, +0.0000e+00, +0.0000e+00}, 
+  { +5.9297e-02, +4.8378e-04, +1.0000e+00, +3.3251e-03, -1.2778e-01}, 
+  { +3.0592e+00, +5.0598e-02, +0.0000e+00, +2.4788e-03, -7.2137e+00}, 
+  { +1.3154e-01, +1.2040e-03, +0.0000e+00, +0.0000e+00, +8.6688e-01},
 };
-const float B_d[CANT_VARIABLES] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+const float B_d[CANT_VARIABLES] = { 
+  +1.0882e-03, +1.0202e-01, +1.8417e-05, +2.9752e-03, +5.1576e-05 
+};
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
-  { 0.0f, 0.0f, 0.0f, 1.0f, 0.0f }, 
-  { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f }, 
+  { 0, 0, 1, 0, 0 }, 
+  { 1, 0, 0, 0, 0 }, 
 };
 
-const float L[CANT_VARIABLES][CANT_MEDICIONES] = { 
-  { 000.0000f, 000.0000f },
-  { 000.0000f, 000.0000f },
-  { 000.0000f, 000.0000f },
-  { 000.0000f, 000.0000f },
-  { 000.0000f, 000.0000f },
+const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = { 
+  { +6.8735e-05, +9.0741e-04, +2.6435e-01, +5.3478e+01, -2.5682e-01 }, 
+  { +5.1561e-01, -3.1538e+00, +2.8099e-01, -1.4544e+01, -7.7500e-02 },
 };
-const float K[CANT_VARIABLES] = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+
+const float K[CANT_VARIABLES] = {
+  +1.3079e+03, +1.8435e+00, -7.3042e+02, -2.6557e+02, -1.4555e+03
+};
+
+const float F[CANT_REF] = { +7.3042e+02, -3.4706e-13 };
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 Adafruit_MPU6050 mpu;
 Servo servo;
 
 variables_estado_t variables_estimadas = { 0 };
-float accion_control = 0;
+float theta_complementario = 0, accion_control = 0;
+unsigned long tiempo_transcurrido = 0;
 
-float theta_complementario = 0;
+int contador_iteracion = 0, contador_referencias = 0;
 
 void mover_servo(unsigned int senial_pwm) {
   senial_pwm = max(MIN_MICROS_RANGO, min(MAX_MICROS_RANGO, senial_pwm));
@@ -62,14 +76,6 @@ float calcular_posicion(unsigned int tiempo_ida_vuelta_micros) {
   return CENTRO_PLATAFORMA - ((float) (tiempo_ida_vuelta_micros) * VELOCIDAD_CM_MICROS) / 2.0f;
 }
 
-float avanzar_control(variables_estado_t x_hat) {
-  float control = 0;
-  for (int i = 0; i < CANT_VARIABLES; i++) {
-    control += K[i] * x_hat.vec[i];
-  }
-  return control;
-}
-
 variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_medido, float pwm_control) {
   mediciones_t y_hat = { 0 };
   for (int i = 0; i < CANT_MEDICIONES; i++) {
@@ -87,11 +93,22 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
     x_sig_hat.vec[i] += B_d[i] * pwm_control;
 
     for (int j = 0; j < CANT_MEDICIONES; j++) {
-      x_sig_hat.vec[i] += L[i][j] * (y_medido.vec[j] - y_hat.vec[j]);  
+      x_sig_hat.vec[i] += L_T[j][i] * (y_medido.vec[j] - y_hat.vec[j]);  
     }
   }
 
   return x_sig_hat;
+}
+
+float avanzar_control(variables_estado_t x_hat, ref_t referencia) {
+  float control = 0;
+  for (int i = 0; i < CANT_VARIABLES; i++) {
+    control += K[i] * x_hat.vec[i];
+  }
+  for (int i = 0; i < CANT_REF; i++) {
+    control += F[i] * referencia.vec[i];
+  }
+  return control;
 }
 
 void setup() {
@@ -120,6 +137,10 @@ void setup() {
 }
 
 void loop() {
+  if (contador_referencias >= NUM_REFERENCIAS) {
+    contador_referencias = 0;
+  }
+  
   unsigned long tiempo_inicio = micros();
 
   // Lectura de los 8 sensores
@@ -131,21 +152,27 @@ void loop() {
   theta_complementario = calcular_angulo_complementario(theta_complementario, &giroscopio.gyro, &acelerometro.acceleration);
   float posicion_carro = calcular_posicion(tiempo_ida_vuelta_micros);
 
-  mediciones_t mediciones = { 
-    {
-      .posicion = posicion_carro,
-      .theta = theta_complementario, 
-    },
-  };
+  mediciones_t mediciones = {{
+    .posicion = posicion_carro,
+    .theta = theta_complementario, 
+  }};
+
+  ref_t referencia = {{
+    .posicion = REFERENCIAS_POSICION[contador_referencias],
+    .theta = REFERENCIAS_THETA[contador_referencias],
+  }};
 
   variables_estimadas = avanzar_observador(variables_estimadas, mediciones, accion_control);
-  accion_control = avanzar_control(variables_estimadas);
+  accion_control = avanzar_control(variables_estimadas, referencia);
 
-  mover_servo(CONTROL_EQUILIBRIO - (unsigned int)accion_control);
+  // Lograr generar una señal del servo
+  mover_servo(CONTROL_EQUILIBRIO + (unsigned int)accion_control);
  
   // Enviar datos
   enviar_datos({
     .accion_control = accion_control,
+    .referencia_posicion = referencia.posicion,
+    .referencia_theta = referencia.theta,
 
     .theta_medido = mediciones.theta,
     .theta_estimado = variables_estimadas.theta,
@@ -157,9 +184,18 @@ void loop() {
     .posicion_estimado = variables_estimadas.posicion,
 
     .velocidad_estimada = variables_estimadas.velocidad,
+
+    .tiempo_transcurrido = (float)tiempo_transcurrido,
   });
 
-  unsigned long tiempo_transcurrido = micros() - tiempo_inicio;
+  if (contador_iteracion >= CANT_ITERACIONES) {
+    contador_iteracion = 0;
+    contador_referencias++;
+  }
+
+  contador_iteracion++;
+
+  tiempo_transcurrido = micros() - tiempo_inicio;
   if (tiempo_transcurrido < periodo_micros) {
     unsigned long tiempo_espera = periodo_micros - tiempo_transcurrido;
     delay(tiempo_espera / 1000);

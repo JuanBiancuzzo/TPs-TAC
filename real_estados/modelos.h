@@ -1,12 +1,11 @@
 #ifndef MODELOS_H
 #define MODELOS_H
 
-#define CANT_VARIABLES 6
+#define CANT_VARIABLES 5
 typedef union {
   struct {
     float theta;
     float omega;
-    float corriente;
     float posicion;
     float velocidad;
     float x_3;
@@ -22,5 +21,14 @@ typedef union {
   };
   float vec[CANT_MEDICIONES];
 } mediciones_t;
+
+#define CANT_REF 2
+typedef union {
+  struct {
+    float posicion;
+    float theta;
+  };
+  float vec[CANT_REF];
+} ref_t;
 
 #endif

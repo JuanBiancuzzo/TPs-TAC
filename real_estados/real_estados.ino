@@ -37,8 +37,8 @@ const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = {
 };
 
 const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = { 
-  { +7.6293e-05, +5.4966e-04, +2.6458e-01, +5.3461e+01, -2.5706e-01 }, 
-  { +4.1589e-01, -3.1456e+00, +8.7231e-02, +7.3436e-01, +1.0570e-01 },
+  { -4.3077e-03, -5.6869e-02, +5.1320e-01, -9.7124e-01, +1.0202e-01 }, 
+  { +4.4510e-01, -4.0847e+00, +5.1018e-02, +2.9055e+00, +1.3937e-01 },
 };
 
 const float K[CANT_VARIABLES] = {

@@ -62,7 +62,6 @@ mostrar_matriz(K, "K");
 F = pinv(C_d*inv(eye(5)-(A_d+B_d*K))*B_d);
 mostrar_matriz(F, "F");
 
-
 %% Mostrar matriz
 function [] = mostrar_matriz(matriz, nombre)
     tamanio = size(matriz);

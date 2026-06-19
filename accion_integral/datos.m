@@ -12,6 +12,9 @@ datos.OmegaObservado = out.omega_obs;
 datos.PosicionMedido = out.posicion_med;
 datos.PosicionObservado = out.posicion_obs;
 
+datos.VelocidadObservado = out.velocidad_obs;
+
+datos.TiempoTranscurrido = out.tiempo;
 
 for intento = 1:100 
     path = sprintf("mediciones/realimentacion_accion_integral_%d.csv", intento);

@@ -16,6 +16,8 @@ datos.OmegaObservado = out.omega_obs;
 datos.PosicionMedido = out.posicion_med;
 datos.PosicionObservado = out.posicion_obs;
 
+datos.VelocidadObservado = out.velocidad_obs;
+
 datos.TiempoTranscurrido = out.tiempo;
 
 for intento = 1:100 

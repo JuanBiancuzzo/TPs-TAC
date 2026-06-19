@@ -80,7 +80,7 @@ end
 
 %% Luenberger 
 % No puede tener más de 2 (rank(C_d)) polos repetidos
-polos = [ -40 -30 -20 -25 -30 ];
+polos = [ -40 -40 -5 -320 -15 ];
 L = place(A_d', C_d', exp(polos * dt))';
 mostrar_matriz(L, "L");
 

@@ -1,5 +1,180 @@
-"""
-Serial communication with Arduino.
+import threading
+import queue
+import signal
+
+import numpy as np
+import matplotlib.pyplot as plt
+from enum import IntEnum, auto
+import comunicacion_lib as cl
+
+# Para correrlo ejemplo:
+# python3 comuncacion.py serial --comm COMM3 -o mediciones/observaciones.csv
+# python3 comuncacion.py archivo -i mediciones/observaciones.csv --separador-input=,
+
+class Variable(IntEnum):
+    ACCION_DE_CONTROL = 0
+
+    THETA_MEDIDA = auto()
+    THETA_OBSERVADA = auto() 
+
+    OMEGA_MEDIDA = auto() 
+    OMEGA_OBSERVADA = auto()
+
+    POSICION_MEDIDA = auto() 
+    POSICION_OBSERVADA = auto()
+
+    VELOCIDAD_OBSERVADA = auto()
+
+    CANTIDAD = auto()
+
+class GraficoObservador(cl.Grafico):
+    def __init__(self, periodo, cantidad_puntos):
+        super().__init__(cantidad_puntos, Variable)
+        self.cantidad_puntos = cantidad_puntos
+        self.periodo = periodo
+
+        self.tiempo = self.periodo * np.arange(0, self.cantidad_puntos) 
+
+    def iniciar_plot(self):
+        self.figure = plt.figure(layout = "constrained")
+        axis = self.figure.subplot_mosaic([
+            ["Theta", "Posicion"],
+            ["Omega", "Velocidad"],
+            ["Control", "Control"],
+        ])
+        self.axis = tuple([ axis[i] for i in ["Control", "Theta", "Omega", "Posicion", "Velocidad"] ])
+        ax_control, ax_theta, ax_omega, ax_posicion, ax_velocidad = self.axis
+
+        # Lo inicializamos en ceros, ya que la actualizacion va a agarrar los valores reales
+        ceros, unos = np.zeros(self.cantidad_puntos), np.ones(self.cantidad_puntos)
+
+        # Plot de control
+        pwm_minimo, pwm_maximo = -1038, 2152
+        for pwm_rango in [pwm_minimo, pwm_maximo]:
+            ax_control.plot(self.tiempo, pwm_rango * unos)
+        self.linea_control, = ax_control.plot(self.tiempo, ceros)
+
+        ax_control.set_title("Acción de control", fontsize = 12)
+        ax_control.set_ylabel("PWM [us]", fontsize = 10)
+        ax_control.set_ylim(pwm_minimo, pwm_maximo)
+        ax_control.grid(True)
+
+        # Plot estimacion angulo
+        self.linea_theta_medida, = ax_theta.plot(self.tiempo, ceros, label = "Medicion")
+        self.linea_theta_observada, = ax_theta.plot(self.tiempo, ceros, label = "Observado")
+
+        ax_theta.set_title("Angulo de la plataforma", fontsize = 12)
+        ax_theta.set_ylabel("Angulo [deg]", fontsize = 10)
+        ax_theta.legend(loc = "upper right")
+        ax_theta.set_ylim(-15, 22)
+        ax_theta.grid(True)
+
+        # Plot estimacion velocidad angular
+        self.linea_omega_medida, = ax_omega.plot(self.tiempo, ceros, label = "Medicion")
+        self.linea_omega_observada, = ax_omega.plot(self.tiempo, ceros, label = "Observado")
+
+        ax_omega.set_title("Velocidad angular de la plataforma", fontsize = 12)
+        ax_omega.set_ylabel("Velocidad angular [deg/s]", fontsize = 10)
+        ax_omega.legend(loc = "upper right")
+        ax_omega.set_ylim(auto = True)
+        ax_omega.grid(True)
+
+        # Plot estimacion posicion
+        self.linea_posicion_medida, = ax_posicion.plot(self.tiempo, ceros, label = "Medicion")
+        self.linea_posicion_observada, = ax_posicion.plot(self.tiempo, ceros, label = "Observado")
+
+        ax_posicion.set_title("Posicion del carro", fontsize = 12)
+        ax_posicion.set_ylabel("Posicion [cm]", fontsize = 10)
+        ax_posicion.legend(loc = "upper right")
+        ax_posicion.set_ylim(-20, 20)
+        ax_posicion.grid(True)
+
+        # Plot estimacion velocidad
+        self.linea_velocidad_medida, = ax_velocidad.plot(self.tiempo, ceros, label = "Medicion")
+        self.linea_velocidad_observada, = ax_velocidad.plot(self.tiempo, ceros, label = "Observado")
+
+        ax_velocidad.set_title("Velocidad del carro", fontsize = 12)
+        ax_velocidad.set_ylabel("Velocidad [cm/s]", fontsize = 10)
+        ax_velocidad.legend(loc = "upper right")
+        ax_velocidad.set_ylim(auto = True)
+        ax_velocidad.grid(True)
+
+        self.figure.suptitle("Observador", fontsize = 14)
+
+    def actualizar_datos(self, datos):
+        self.linea_control.set_ydata(datos.accion_de_control)
+
+        self.linea_theta_medida.set_ydata(datos.theta_medida)
+        self.linea_theta_observada.set_ydata(datos.theta_observada)
+
+        self.linea_omega_medida.set_ydata(datos.omega_medida)
+        self.linea_omega_observada.set_ydata(datos.omega_observada)
+
+        self.linea_posicion_medida.set_ydata(datos.posicion_medida)
+        self.linea_posicion_observada.set_ydata(datos.posicion_observada)
+
+        velocidad_shifteada = np.zeros(self.cantidad_puntos)
+        velocidad_shifteada[:-1] = datos.velocidad_observada[1:]
+
+        velocidad_medida = (datos.velocidad_observada - velocidad_shifteada)
+        velocidad_medida /= self.periodo
+
+        self.linea_velocidad_medida.set_ydata(velocidad_medida)
+        self.linea_velocidad_observada.set_ydata(datos.velocidad_observada)
+
+        for ax in list(self.axis):
+            ax.relim() 
+            ax.autoscale_view() 
+            self.figure.canvas.blit(ax.bbox)
+
+        self.figure.canvas.flush_events()
+
+def main(args):
+    handle_cancel = lambda: print("\nManejando la interrupcion")
+
+    input_queue = queue.Queue()
+    match args.tipo:
+        case cl.Argumentos.Tipo.SERIAL:
+            archivo_queue = queue.Queue()
+
+            threading.Thread(target = cl.escribir_archivo, args = (
+                args.archivo_output, args.separador_output, Variable, args.periodo, 
+                cl.IteratableQueue(archivo_queue),
+            )).start()
+
+            serial_output = cl.MultipleQueue(input_queue, archivo_queue)
+            threading.Thread(target = cl.lectura_serial, args = (
+                args.comm, args.baudrate, args.timeout, args.header, Variable.CANTIDAD, serial_output,
+            )).start()
+
+            def handle_cancel():
+                print("\nManejando el cierre de la comunicacion serial")
+                serial_output.shutdown(immediate = True)
+
+        case cl.Argumentos.Tipo.ARCHIVO:
+            archivo_output = cl.MultipleQueue(input_queue)
+            threading.Thread(target = cl.lectura_archivo, args = (
+                args.archivo_input, args.separador_input, archivo_output, 
+            )).start()
+
+            def handle_cancel():
+                print("\nManejando el cierre de la comunicacion con el archivo")
+                archivo_output.shutdown(immediate = True)
+
+    def handle_ctrl_c(signum, frame):
+        handle_cancel()
+        plt.close("all")
+    signal.signal(signal.SIGINT, handle_ctrl_c)
+
+    try:
+        grafico = GraficoObservador(args.periodo, args.puntos)
+        cl.graficar_datos(grafico, cl.IteratableQueue(input_queue))
+
+    except:
+        handle_cancel()
+
+if __name__ == "__main__":
+    doc = """Serial communication with Arduino.
 
 Usage:
     comunicacion.py serial -c=<comm> [-b=<boudrate>] [-h=<header>] [-t=<timeout>] -o=<archivo-output> [-T=<periodo>] [-p=<puntos>] [-s=<separador>]
@@ -25,358 +200,4 @@ Options:
     -i=<archivo-input>, --archivo-input=<archivo-input>     Nombre del archivo csv de input.
     --separador-input=<separador-input>                     Separador para el archivo input. [default: ;]
 """
-
-import serial # Libreria pyserial
-import struct
-import threading
-import queue
-
-from docopt import docopt # Libreria docopt-ng
-import numpy as np
-import matplotlib.pyplot as plt
-from enum import Enum, IntEnum, auto
-
-# Para correrlo ejemplo:
-# python3 comuncacion.py --comm COMM3 -o mediciones/observaciones.csv
-
-class Variable(IntEnum):
-    ACCION_DE_CONTROL = 0
-
-    THETA_MEDIDO = 1
-    THETA_ESTIMADO = 2
-
-    OMEGA_MEDIDA = 3
-    OMEGA_ESTIMADA = 4
-
-    POSICION_MEDIDO = 5
-    POSICION_ESTIMADO = 6
-
-    VELOCIDAD_ESTIMADA = 7
-
-    CANTIDAD = auto()
-
-class Grafico:
-    def __init__(self, periodo, cantidad_puntos):
-        self.cantidad_puntos = cantidad_puntos
-        self.periodo = periodo
-
-        self.datos = np.zeros((Variable.CANTIDAD, self.cantidad_puntos)) 
-        self.tiempo = self.periodo * np.arange(0, self.cantidad_puntos) 
-
-        self.punto_actual = 0
-        self.actualizar = []
-
-    def iniciarPlot(self):
-        plt.ion() # Hacemos que sea interactivo el plot aka actualizable
-        self.figure = plt.figure(layout = "constrained")
-        axis = self.figure.subplot_mosaic([
-            ["Theta", "Posicion"],
-            ["Omega", "Velocidad"],
-            ["Control", "Control"],
-        ])
-        axControl, axTheta, axOmega, axPosicion, axVelocidad = tuple([ axis[i] for i in ["Control", "Theta", "Omega", "Posicion", "Velocidad"] ])
-
-        # Lo inicializamos en ceros, ya que la actualizacion va a agarrar los valores reales
-        ceros = np.zeros(self.cantidad_puntos)
-
-        def actualizar_rangos(ax, lineaMedida, posicionMedida, lineaEstimada, posicionEstimada):
-            def actualizar_ejes(datos):
-                medida = datos[posicionMedida, :]
-                estimada = datos[posicionEstimada, :]
-
-                lineaMedida.set_ydata(medida)
-                lineaEstimada.set_ydata(estimada)
-
-                concat = np.concatenate((medida, estimada))
-                minimo, maximo = np.min(concat), np.max(concat)
-                rango = max(1, maximo - minimo)
-                ax.set_ylim(minimo - 0.05 * rango, maximo + 0.05 * rango)
-            return actualizar_ejes
-        
-        # Plot de control
-        axControl.plot(self.tiempo, -1038 * np.ones(self.cantidad_puntos))
-        lineaControl, = axControl.plot(self.tiempo, ceros)
-        axControl.plot(self.tiempo, 2152 * np.ones(self.cantidad_puntos))
-
-        axControl.grid(True)
-        axControl.set_title("Acción de control", fontsize = 12)
-        axControl.set_ylabel("PWM [us]", fontsize = 10)
-
-        def actualizar_control(datos):
-            lineaControl.set_ydata(datos[Variable.ACCION_DE_CONTROL, :])
-        self.actualizar.append(actualizar_control)
-
-        # Plot estimacion angulo
-        lineaThetaMedida, = axTheta.plot(self.tiempo, ceros, label = "Medicion")
-        lineaThetaEstimada, = axTheta.plot(self.tiempo, ceros, label = "Estimada")
-
-        axTheta.set_title("Angulo de la plataforma", fontsize = 12)
-        axTheta.set_ylabel("Angulo [deg]", fontsize = 10)
-        axTheta.set_ylim(-15, 22)
-
-        def actualizar_angulo(datos):
-            lineaThetaMedida.set_ydata(datos[Variable.THETA_MEDIDO, :])
-            lineaThetaEstimada.set_ydata(datos[Variable.THETA_ESTIMADO, :])
-        self.actualizar.append(actualizar_angulo)
-
-        # Plot estimacion velocidad angular
-        lineaOmegaMedida, = axOmega.plot(self.tiempo, ceros, label = "Medicion")
-        lineaOmegaEstimada, = axOmega.plot(self.tiempo, ceros, label = "Estimada")
-
-        axOmega.set_title("Velocidad angular de la plataforma", fontsize = 12)
-        axOmega.set_ylabel("Velocidad angular [deg/s]", fontsize = 10)
-
-        self.actualizar.append(actualizar_rangos(
-            axOmega, lineaOmegaMedida, Variable.OMEGA_MEDIDA, lineaOmegaEstimada, Variable.OMEGA_ESTIMADA,
-        ))
-
-        # Plot estimacion posicion
-        lineaPosicionMedida, = axPosicion.plot(self.tiempo, ceros, label = "Medicion")
-        lineaPosicionEstimada, = axPosicion.plot(self.tiempo, ceros, label = "Estimada")
-
-        axPosicion.set_title("Posicion del carro", fontsize = 12)
-        axPosicion.set_ylabel("Posicion [cm]", fontsize = 10)
-        axPosicion.set_ylim(-20, 20)
-
-        def actualizar_posicion(datos):
-            lineaPosicionMedida.set_ydata(datos[Variable.POSICION_MEDIDO, :])
-            lineaPosicionEstimada.set_ydata(datos[Variable.POSICION_ESTIMADO, :])
-        self.actualizar.append(actualizar_posicion)
-
-        # Plot estimacion velocidad
-        lineaVelocidadMedida, = axVelocidad.plot(self.tiempo, ceros, label = "Medida")
-        lineaVelocidadEstimada, = axVelocidad.plot(self.tiempo, ceros, label = "Estimada")
-
-        axVelocidad.set_title("Velocidad del carro", fontsize = 12)
-        axVelocidad.set_ylabel("Velocidad [cm/s]", fontsize = 10)
-
-        def actualizar_velocidad(datos):
-            velocidad_estimada = datos[Variable.POSICION_ESTIMADO, :]
-            velocidad_medida = (velocidad_estimada - np.roll(velocidad_estimada, -1)) / self.periodo
-
-            # Limpiando la derivada
-            velocidad_medida[self.punto_actual] = 0 
-            velocidad_medida[-1] = 0
-
-            lineaVelocidadMedida.set_ydata(velocidad_medida)
-            lineaVelocidadEstimada.set_ydata(velocidad_estimada)
-
-            concat = np.concatenate((velocidad_medida, velocidad_estimada))
-            minimo, maximo = np.min(concat), np.max(concat)
-            rango = max(1, maximo - minimo)
-            ax.set_ylim(minimo - 0.05 * rango, maximo + 0.05 * rango)
-        self.actualizar.append(actualizar_velocidad)
-
-        for ax in [axTheta, axOmega, axPosicion, axVelocidad]:
-            ax.grid(True)
-            ax.legend(loc = "upper right")
-
-        self.figure.suptitle("Observador", fontsize = 14)
-
-    def agregarDatos(self, nuevosDatos):
-        if self.punto_actual >= self.cantidad_puntos - 1:
-            self.punto_actual = self.cantidad_puntos - 1
-            # Desplazamos un dato (-1) cuando se llenan
-            self.datos = np.roll(self.datos, -1, axis = 1)
-
-        else:
-            self.punto_actual += 1
-
-        for posicion, nuevoDato in enumerate(nuevosDatos):
-            self.datos[posicion, self.punto_actual] = nuevoDato
-
-        for actualizacion in self.actualizar:
-            actualizacion(self.datos)
-
-        self.figure.canvas.draw()
-        self.figure.canvas.flush_events()
-
-    def finalizarPlot(self):
-        plt.ioff()
-        plt.show()
-
-class Argumentos:
-    class Tipo(Enum):
-        SERIAL = "Comunicacion serial"
-        ARCHIVO = "Archivo input"
-
-    def __init__(self, periodo, puntos):
-        self.periodo = periodo
-        self.puntos = puntos
-    
-    def serial(self, comm, baudrate, header, timeout):
-        self.tipo = Argumentos.Tipo.SERIAL
-        self.comm = comm
-        self.baudrate = baudrate
-        self.header = header
-        self.timeout = timeout
-
-    def archivo_output(self, archivo_output, separador_output):
-        self.tipo = Argumentos.Tipo.SERIAL
-        self.archivo_output = archivo_output
-        self.separador_output = separador_output
-
-    def archivo_input(self, archivo_input, separador_input):
-        self.tipo = Argumentos.Tipo.ARCHIVO
-        self.archivo_input = archivo_input
-        self.separador_input = separador_input
-
-def parse_args(dicc_args):
-    args = Argumentos(float(dicc_args["--periodo"]), max(1, int(dicc_args["--cantidad-puntos"])))
-
-    if dicc_args["serial"]:
-        args.serial(
-            dicc_args["--comm"], 
-            int(dicc_args["--boudrate"]),
-            dicc_args["--header"],
-            float(dicc_args["--timeout"]),
-        )
-
-        args.archivo_output(
-            dicc_args["--archivo-output"], 
-            dicc_args["--separador"],
-        )
-
-    elif dicc_args["archivo"]: 
-        args.archivo_input(
-            dicc_args["--archivo-input"], 
-            dicc_args["--separador-input"],
-        )
-
-    return args
-
-def lectura_serial(comm, baudrate, timeout, header, output_queue):
-    TAM_FLOAT = 4
-
-    largo_header = len(header)
-    header_bytes = [ bytes(b, "utf-8") for b in header ]
-    def esperarHeader(ser):
-        header_receive = 0
-        while header_receive < largo_header:
-            data_bytes = ser.read(1)
-            if data_bytes == header_bytes[header_receive]:
-                header_receive += 1
-            else:
-                header_receive = 0
-
-    with serial.Serial(comm, baudrate, timeout = timeout) as ser:
-        print(f"Conectado al puerto: {ser.portstr}")
-
-        while True:
-            esperarHeader(ser)
-
-            data_bytes = ser.read(TAM_FLOAT * Variable.CANTIDAD)
-            if not data_bytes:
-                break
-
-            nuevos_datos = [ 0 ] * Variable.CANTIDAD
-            for i in range(Variable.CANTIDAD):
-                inicio = i * TAM_FLOAT
-                final = (i + 1) * TAM_FLOAT
-                nuevos_datos[i] = struct.unpack('<f', data_bytes[inicio:final])[0]
-
-            output_queue.put(nuevos_datos)
-
-    output_queue.shutdown()
-    output_queue.join()
-
-def lectura_archivo(nombre_archivo, separador, output_queue):
-    import time
-
-    with open(nombre_archivo, "r") as archivo:
-        _ = archivo.readline() # Descartamos header
-        for linea in archivo:
-            nuevos_datos = [ 
-                float(valor) 
-                for valor in linea.strip().split(separador) 
-            ][1:] # Descartamos la primera columna
-            output_queue.put(nuevos_datos)
-
-            time.sleep(1)
-
-    output_queue.shutdown()
-    output_queue.join()
-
-def escribir_archivo(nombre_archivo, separador, periodo, input_queue):
-    with open(nombre_archivo, "w") as archivo:
-        nombres = [ 
-            Variable(i).name.replace("_", " ").capitalize() 
-            for i in range(Variable.CANTIDAD) 
-        ]
-        archivo.write(f"{separador.join(["Tiempo", *nombres])}\n")
-
-        for i, nuevos_datos in enumerate(input_queue):
-            input = [periodo * i, *nuevos_datos]
-            input = map(lambda num: str(num), input)
-            archivo.write(f"{separador.join(input)}\n")
-
-def graficar_datos(periodo, cantidad_puntos, input_queue):
-    grafico = Grafico(periodo, cantidad_puntos)
-    grafico.iniciarPlot()
-
-    for nuevos_datos in input_queue:
-        grafico.agregarDatos(nuevos_datos)
-
-    grafico.finalizarPlot()
-
-class IteratableQueue:
-    def __init__(self, queue):
-        self.queue = queue
-
-    def __iter__(self):
-        while True:
-            try:
-                valor = self.queue.get()
-                yield valor
-                self.queue.task_done()
-
-            except queue.ShutDown:
-                break
-
-class MultipleQueue:
-    def __init__(self, *queues):
-        self.queues = list(queues)
-
-    def put(self, valor):
-        for queue in self.queues:
-            queue.put(valor)
-
-    def shutdown(self, immediate = False):
-        for queue in self.queues:
-            queue.shutdown(immediate)
-
-    def join(self):
-        for queue in self.queues:
-            queue.join()
-
-def main(args):
-    input_queue = queue.Queue()
-
-    match args.tipo:
-        case Argumentos.Tipo.SERIAL:
-            archivo_queue = queue.Queue()
-
-            threading.Thread(target = escribir_archivo, args = (
-                args.archivo_output, args.separador_output, args.periodo, IteratableQueue(archivo_queue),
-            )).start()
-
-            threading.Thread(target = lectura_serial, args = (
-                args.comm, args.baudrate, args.timeout, args.header, 
-                MultipleQueue(input_queue, archivo_queue),
-            )).start()
-
-        case Argumentos.Tipo.ARCHIVO:
-            threading.Thread(target = lectura_archivo, args = (
-                args.archivo_input, args.separador_input,
-                input_queue,
-            )).start()
-
-    graficar_datos(args.periodo, args.puntos, IteratableQueue(input_queue))
-
-if __name__ == "__main__":
-    try: 
-        args = parse_args(docopt(__doc__, version = "0.1.0"))
-        main(args)
-
-    except KeyboardInterrupt:
-        print("Terminando lectura de arduino...")
+    main(cl.parse_args(doc))

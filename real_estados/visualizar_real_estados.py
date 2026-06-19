@@ -8,13 +8,14 @@ from enum import IntEnum, auto
 import comunicacion_lib as cl
 
 # Para correrlo ejemplo:
-# python3 comuncacion.py serial --comm COMM3 -o mediciones/observaciones.csv
-# python3 comuncacion.py archivo -i mediciones/observaciones.csv --separador-input=,
+# python3 visualizar_real_estados.py serial --comm COMM3 -o mediciones/observaciones.csv
+# python3 visualizar_real_estados.py archivo -i mediciones/observaciones.csv --separador-input=,
 
 class Variable(IntEnum):
     ACCION_DE_CONTROL = 0
 
     REFERENCIA_POSICION = auto()
+    REFERENCIA_THETA = auto()
 
     THETA_MEDIDA = auto()
     THETA_OBSERVADA = auto() 
@@ -31,7 +32,7 @@ class Variable(IntEnum):
 
     CANTIDAD = auto()
 
-class GraficoObservador(cl.Grafico):
+class GraficoRealimentacionEstados(cl.Grafico):
     def __init__(self, periodo, cantidad_puntos):
         super().__init__(cantidad_puntos, Variable)
         self.cantidad_puntos = cantidad_puntos
@@ -84,7 +85,6 @@ class GraficoObservador(cl.Grafico):
         ax_omega.grid(True)
 
         # Plot estimacion posicion
-        self.linea_posicion_referencia, = ax_posicion.plot(self.tiempo, ceros, label = "Referencia")
         self.linea_posicion_medida, = ax_posicion.plot(self.tiempo, ceros, label = "Medicion")
         self.linea_posicion_observada, = ax_posicion.plot(self.tiempo, ceros, label = "Observado")
 
@@ -104,7 +104,7 @@ class GraficoObservador(cl.Grafico):
         ax_velocidad.set_ylim(auto = True)
         ax_velocidad.grid(True)
 
-        self.figure.suptitle("Realimentacion con accion integral", fontsize = 14)
+        self.figure.suptitle("Realimentacion por variables de estados", fontsize = 14)
 
     def actualizar_datos(self, datos):
         self.linea_control.set_ydata(datos.accion_de_control)
@@ -115,7 +115,6 @@ class GraficoObservador(cl.Grafico):
         self.linea_omega_medida.set_ydata(datos.omega_medida)
         self.linea_omega_observada.set_ydata(datos.omega_observada)
 
-        self.linea_posicion_referencia.set_ydata(datos.referencia_posicion)
         self.linea_posicion_medida.set_ydata(datos.posicion_medida)
         self.linea_posicion_observada.set_ydata(datos.posicion_observada)
 
@@ -173,7 +172,7 @@ def main(args):
     signal.signal(signal.SIGINT, handle_ctrl_c)
 
     try:
-        grafico = GraficoObservador(args.periodo, args.puntos)
+        grafico = GraficoRealimentacionEstados(args.periodo, args.puntos)
         cl.graficar_datos(grafico, cl.IteratableQueue(input_queue))
 
     except:

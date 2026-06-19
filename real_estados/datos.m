@@ -1,3 +1,5 @@
+con_feedforward = true;
+
 datos = table();
 datos.Tiempo = out.tout;
 datos.ControlPWM = out.control;
@@ -18,6 +20,9 @@ datos.TiempoTranscurrido = out.tiempo;
 
 for intento = 1:100 
     path = sprintf("mediciones/realimentacion_sin_referencia_%d.csv", intento);
+    if con_feedforward 
+        path = sprintf("mediciones/realimentacion_feedforward_%d.csv", intento);
+    end 
     
     if isfile(path)
         continue;

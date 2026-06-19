@@ -26,20 +26,19 @@ const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
   { -3.1320e+00, +6.6833e-01, +0.0000e+00, +0.0000e+00, +0.0000e+00}, 
   { +5.9297e-02, +4.8378e-04, +1.0000e+00, +3.3251e-03, -1.2778e-01}, 
   { +3.0592e+00, +5.0598e-02, +0.0000e+00, +2.4788e-03, -7.2137e+00}, 
-  { +1.3154e-01, +1.2040e-03, +0.0000e+00, +0.0000e+00, +8.6688e-01},
+  { +1.3154e-01, +1.2040e-03, +0.0000e+00, +0.0000e+00, +8.6688e-01}, 
 };
-const float B_d[CANT_VARIABLES] = { +1.0882e-03, +1.0202e-01, +1.8417e-05, +2.9752e-03, +5.1576e-05 };
+const float B_d[CANT_VARIABLES] = { 
+  +1.0882e-03, +1.0202e-01, +1.8417e-05, +2.9752e-03, +5.1576e-05 
+};
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
   { 0, 0, 1, 0, 0 }, 
   { 1, 0, 0, 0, 0 }, 
 };
 
-const float L[CANT_VARIABLES][CANT_MEDICIONES] = { 
-  { +6.8735e-05, +5.1561e-01, }, 
-  { +9.0741e-04, -3.1538e+00, }, 
-  { +2.6435e-01, +2.8099e-01, }, 
-  { +5.3478e+01, -1.4544e+01, }, 
-  { -2.5682e-01, -7.7500e-02, }, 
+const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = { 
+  { +7.6293e-05, +5.4966e-04, +2.6458e-01, +5.3461e+01, -2.5706e-01 }, 
+  { +4.1589e-01, -3.1456e+00, +8.7231e-02, +7.3436e-01, +1.0570e-01 },
 };
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
@@ -87,7 +86,7 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
     x_sig_hat.vec[i] += B_d[i] * pwm_control;
 
     for (int j = 0; j < CANT_MEDICIONES; j++) {
-      x_sig_hat.vec[i] += L[i][j] * (y_medido.vec[j] - y_hat.vec[j]);  
+      x_sig_hat.vec[i] += L_T[j][i] * (y_medido.vec[j] - y_hat.vec[j]);  
     }
   }
 

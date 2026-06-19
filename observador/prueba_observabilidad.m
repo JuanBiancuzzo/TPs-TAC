@@ -7,9 +7,9 @@ clc
 orden = 5;
 dt = 0.02;
 
-b0 = 6.142;
-a0 = 201.9;
-a1 = 13.75;
+b0 = 6.15;
+a0 = 188.8;
+a1 = 17.98;
 A_sb = [
       0   1;
     -a0 -a1
@@ -80,7 +80,7 @@ end
 
 %% Luenberger 
 % No puede tener más de 2 (rank(C_d)) polos repetidos
-polos = [ -40 -40 -20 -25 -30 ];
+polos = [ -40 -30 -20 -25 -30 ];
 L = place(A_d', C_d', exp(polos * dt))';
 mostrar_matriz(L, "L");
 
@@ -91,11 +91,11 @@ function [] = mostrar_matriz(matriz, nombre)
     for i = 1:tamanio(1)
         fprintf("  { ");
         for j = 1:tamanio(2)
-            if j == tamanio, delimitador = ""; else, delimitador = ", "; end
+            if j == tamanio(2), delimitador = ""; else, delimitador = ", "; end
             
             fprintf("%+.4e%s", matriz(i, j), delimitador);
         end
-        fprintf("}, \n");
+        fprintf(" }, \n");
     end
     fprintf("}\n");
 end

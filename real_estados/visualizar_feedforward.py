@@ -93,7 +93,7 @@ class GraficoFeedforward(cl.Grafico):
         ax_posicion.set_title("Posicion del carro", fontsize = 12)
         ax_posicion.set_ylabel("Posicion [cm]", fontsize = 10)
         ax_posicion.legend(loc = "upper right")
-        ax_posicion.set_ylim(-20, 20)
+        ax_posicion.set_ylim(auto = True)
         ax_posicion.grid(True)
 
         # Plot estimacion velocidad
@@ -122,11 +122,10 @@ class GraficoFeedforward(cl.Grafico):
         self.linea_posicion_medida.set_ydata(datos.posicion_medida)
         self.linea_posicion_observada.set_ydata(datos.posicion_observada)
 
-        velocidad_shifteada = np.zeros(self.cantidad_puntos)
-        velocidad_shifteada[:-1] = datos.velocidad_observada[1:]
+        posicion_shifteada = np.zeros(self.cantidad_puntos)
+        posicion_shifteada[:-1] = datos.posicion_medida[1:]
 
-        velocidad_medida = (datos.velocidad_observada - velocidad_shifteada)
-        velocidad_medida /= self.periodo
+        velocidad_medida = (posicion_shifteada - datos.posicion_medida) / self.periodo
 
         self.linea_velocidad_medida.set_ydata(velocidad_medida)
         self.linea_velocidad_observada.set_ydata(datos.velocidad_observada)

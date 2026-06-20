@@ -37,15 +37,15 @@ const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = {
 };
 
 const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = { 
-  { -4.3077e-03, -5.6869e-02, +5.1320e-01, -9.7124e-01, +1.0202e-01 }, 
-  { +4.4510e-01, -4.0847e+00, +5.1018e-02, +2.9055e+00, +1.3937e-01 },
+  { +4.3161e-02, +9.1522e-02, +8.1068e-01, +3.5751e+00, -4.2696e-01 }, 
+  { +5.5681e-01, -2.7933e+00, +1.4711e-01, +4.1089e+00, +5.0831e-03 },
 };
 
 const float K[CANT_VARIABLES] = {
-  +1.3079e+03, +1.8435e+00, -7.3042e+02, -2.6557e+02, -1.4555e+03
+  +5.3305e+01, +2.2338e+00, -1.6664e+02, -5.5282e-01, +1.5591e+02
 };
 
-const float F[CANT_REF] = { +7.3042e+02, -3.4706e-13 };
+const float F[CANT_REF] = { +2.3812e+02 };
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 Adafruit_MPU6050 mpu;
@@ -103,7 +103,7 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
 float avanzar_control(variables_estado_t x_hat, ref_t referencia) {
   float control = 0;
   for (int i = 0; i < CANT_VARIABLES; i++) {
-    control += K[i] * x_hat.vec[i];
+    control -= K[i] * x_hat.vec[i];
   }
   for (int i = 0; i < CANT_REF; i++) {
     control += F[i] * referencia.vec[i];

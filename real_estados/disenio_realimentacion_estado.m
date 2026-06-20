@@ -11,7 +11,7 @@ b0 = 6.15;
 a0 = 188.8;
 a1 = 17.98;
 A_sb = [
-      0   1;
+    0   1;
     -a0 -a1
 ];
 B_sb = [ 0; b0 ];
@@ -48,7 +48,7 @@ C_d = sys_d.C;
 
 %% Luenberger 
 % No puede tener más de 2 (rank(C_d)) polos repetidos
-polos = [ -40 -30 -20 -25 -30 ];
+polos = [ -40 -62 -22 -300 -14.28 ];
 L = place(A_d', C_d', exp(polos * dt))';
 mostrar_matriz(L', "L_T");
 
@@ -57,24 +57,37 @@ polos = [ -40 -35 -20 -25 -30 ];
 K = place(A_d, B_d, exp(polos * dt));
 mostrar_matriz(K, "K");
 
+%% Usando LQR
+% x = [theta omega posicion velocidad x_3]
+Q = diag([ 2000, 0.01, 5000, 0.01, 0.01 ]); 
+% u = [pwm]
+R = diag(0.8);
+[Klqr, S, E] = dlqr(A_d, B_d, Q, R);
+
+mostrar_matriz(Klqr, "K_lqr");
+disp(log(E') / dt);
+
+K = Klqr;
+
 %% Matriz de feedforward F
 % pinv -> es la pseudo inversa
-F = pinv(C_d*inv(eye(5)-(A_d+B_d*K))*B_d);
+F = 1 / (C_d*inv(eye(5)-(A_d-B_d*K))*B_d);
 mostrar_matriz(F, "F");
 
 %% Mostrar matriz
 function [] = mostrar_matriz(matriz, nombre)
-    tamanio = size(matriz);
-    fprintf("%s = {\n", nombre);
-    for i = 1:tamanio(1)
-        fprintf("  { ");
-        for j = 1:tamanio(2)
-            if j == tamanio(2), delimitador = ""; else, delimitador = ", "; end
-    
-            fprintf("%+.4e%s", matriz(i, j), delimitador);
-        end
-        fprintf(" }, \n");
+tamanio = size(matriz);
+fprintf("%s = {\n", nombre);
+for i = 1:tamanio(1)
+    fprintf("  { ");
+    for j = 1:tamanio(2)
+        if j == tamanio(2), delimitador = ""; else, delimitador = ", "; end
+
+        fprintf("%+.4e%s", matriz(i, j), delimitador);
     end
-    fprintf("}\n");
+    fprintf(" }, \n");
 end
+fprintf("}\n");
+end
+
 

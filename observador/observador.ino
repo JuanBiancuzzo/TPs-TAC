@@ -37,8 +37,8 @@ const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = {
 };
 
 const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = { 
-  { -4.3077e-03, -5.6869e-02, +5.1320e-01, -9.7124e-01, +1.0202e-01 }, 
-  { +4.4510e-01, -4.0847e+00, +5.1018e-02, +2.9055e+00, +1.3937e-01 },
+  { +4.3161e-02, +9.1522e-02, +8.1068e-01, +3.5751e+00, -4.2696e-01 }, 
+  { +5.5681e-01, -2.7933e+00, +1.4711e-01, +4.1089e+00, +5.0831e-03 },
 };
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 

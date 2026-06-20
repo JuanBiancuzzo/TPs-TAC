@@ -80,9 +80,19 @@ end
 
 %% Luenberger 
 % No puede tener más de 2 (rank(C_d)) polos repetidos
-polos = [ -40 -40 -5 -320 -15 ];
+polos = [ -40 -62 -22 -300 -14.28 ];
 L = place(A_d', C_d', exp(polos * dt))';
-mostrar_matriz(L, "L");
+mostrar_matriz(L', "L_T");
+
+%% Usando Kalman Filter
+% x = [theta omega posicion velocidad x_3]
+V_d = diag([ 0.1, 1, 0.2, 4, 0.4 ]); 
+% y = [posicion theta]
+V_n = diag([ 0.3, 0.05 ]);
+[Lkf_T, _, E] = dlqr(A_d', C_d', V_d, V_n);
+
+mostrar_matriz(Lkf_T, "L_kf_T");
+disp(log(E') / dt);
 
 %% Mostrar matriz
 function [] = mostrar_matriz(matriz, nombre)

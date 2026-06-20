@@ -17,6 +17,7 @@ typedef union {
 typedef union {
   struct {
     float posicion;
+    float theta;
   };
   float vec[CANT_MEDICIONES];
 } mediciones_t;

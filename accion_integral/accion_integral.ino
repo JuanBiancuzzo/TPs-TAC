@@ -28,11 +28,13 @@ const float B_d[CANT_VARIABLES] = {
   +1.0882e-03, +1.0202e-01, +1.8417e-05, +2.9752e-03, +5.1576e-05 
 };
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
-  { 0, 0, 1, 0, 0 },
+  { 0, 0, 1, 0, 0 }, 
+  { 1, 0, 0, 0, 0 }, 
 };
 
 const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = { 
-  { +8.7877e-03, +1.0252e+01, +8.2272e-01, +3.1413e+01, -1.3871e+00 },
+  { +4.3161e-02, +9.1522e-02, +8.1068e-01, +3.5751e+00, -4.2696e-01 }, 
+  { +5.5681e-01, -2.7933e+00, +1.4711e-01, +4.1089e+00, +5.0831e-03 },
 };
 
 const float K[CANT_VARIABLES] = {
@@ -96,11 +98,7 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
 }
 
 ref_t avanzar_error_referencia(ref_t error_previo, mediciones_t mediciones, ref_t referencia) {
-  ref_t error_actual;
-  for (int i = 0; i < CANT_REF; i++) {
-    error_actual.vec[i] = error_previo.vec[i] + periodo * (referencia.vec[i] - mediciones.vec[i]);
-  }
-  return error_actual;
+  return error_actual.posicion + periodo * (referencia.posicion - mediciones.posicion);
 }
 
 float avanzar_control(variables_estado_t x_hat, ref_t q) {

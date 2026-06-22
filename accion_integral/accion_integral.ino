@@ -37,11 +37,13 @@ const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = {
   { +5.5681e-01, -2.7933e+00, +1.4711e-01, +4.1089e+00, +5.0831e-03 },
 };
 
-const float K[CANT_VARIABLES] = {
-  +8.3997e+02, +6.9916e+00, -7.7592e+03, -1.3101e+02, +4.4878e+03
+const float KH[CANT_VARIABLES + CANT_REF] = {
+  +5.3305e+01, +2.2338e+00, -1.6664e+02, -5.5282e-01, +1.5591e+02, +2.3812e+02
 };
 
-const float H[CANT_REF] = { +2.1673e+04 };
+const float A_ed[CANT_REF][CANT_VARIABLES] = {
+  { -5.3762e-04, -2.9946e-06, -2.0000e-02, -5.5583e-05, +1.1285e-03 }
+};
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 Adafruit_MPU6050 mpu;
@@ -97,18 +99,33 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
   return x_sig_hat;
 }
 
-ref_t avanzar_error_referencia(ref_t error_previo, mediciones_t mediciones, ref_t referencia) {
-  return error_actual.posicion + periodo * (referencia.posicion - mediciones.posicion);
+ref_t avanzar_error_referencia(ref_t error_previo, variables_estado_t estado, ref_t referencia) {
+  ref_t error_actual = { 0 };
+
+  for (int i = 0; i < CANT_REF; i++) {
+    error_actual.vec[i] = error_previo.vec[i];
+
+    for (int j = 0; j < CANT_VARIABLES; j++) {
+      error_actual.vec[i] += A_ed[i][j] * estado.vec[j];
+    }
+
+    error_actual.vec[i] += periodo * referencia.vec[i];
+  }
+
+  return error_actual;
 }
 
 float avanzar_control(variables_estado_t x_hat, ref_t q) {
   float control = 0;
+
   for (int i = 0; i < CANT_VARIABLES; i++) {
-    control += K[i] * x_hat.vec[i];
+    control -= KH[i] * x_hat.vec[i];
   }
+
   for (int i = 0; i < CANT_REF; i++) {
-    control += H[i] * q.vec[i];
+    control -= KH[CANT_VARIABLES + i] * q.vec[i];
   }
+
   return control;
 }
 
@@ -155,6 +172,7 @@ void loop() {
 
   mediciones_t mediciones = {{
     .posicion = posicion_carro,
+    .theta = theta_complementario,
   }};
 
   ref_t referencia = {{
@@ -176,7 +194,7 @@ void loop() {
     .accion_control = accion_control,
     .referencia = referencia.posicion,
 
-    .theta_medido = theta_complementario,
+    .theta_medido = mediciones.theta,
     .theta_estimado = variables_estimadas.theta,
 
     .omega_medida = (giroscopio.gyro.x - SESGO_OMEGA) * RADIANES_2_GRADOS,

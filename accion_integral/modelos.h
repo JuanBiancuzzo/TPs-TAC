@@ -13,7 +13,7 @@ typedef union {
   float vec[CANT_VARIABLES];
 } variables_estado_t;
 
-#define CANT_MEDICIONES 1
+#define CANT_MEDICIONES 2
 typedef union {
   struct {
     float posicion;

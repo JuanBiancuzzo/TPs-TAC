@@ -55,7 +55,7 @@ mostrar_matriz(L', "L_T");
 % x = [theta omega posicion velocidad x_3]
 V_d = diag([ 0.1, 1, 0.2, 4, 0.4 ]); 
 % y = [posicion theta]
-V_n = diag([ 0.3, 0.1 ]);
+V_n = diag([ 3, 0.1 ]);
 [Lkf_T, S, E] = dlqr(A_d', C_d', V_d, V_n);
 
 mostrar_matriz(Lkf_T, "L_kf_T");
@@ -66,7 +66,7 @@ ext = 1;
 C_ai = [ 0 0 1 0 0 ];
 A_e = [
         A zeros(orden, ext);
-    -C_ai     eye(ext, ext)
+    -C_ai zeros(ext, ext)
 ];
 B_e = [ B; zeros(ext) ]; 
 C_e = [ C_ai zeros(ext) ]; 

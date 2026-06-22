@@ -26,7 +26,7 @@ const float A_d[CANT_VARIABLES + CANT_REF][CANT_VARIABLES + CANT_REF] = {
   { -5.3762e-04, -2.9946e-06, -2.0000e-02, -5.5583e-05, +1.1285e-03, +1.0000e+00 },
 };
 const float B_d[CANT_VARIABLES + CANT_REF] = { 
-  +1.0882e-03, +1.0202e-01, +1.8417e-05, +2.9752e-03, +5.1576e-05, +0.0000e+00
+  +1.0882e-03, +1.0202e-01, +1.8417e-05, +2.9752e-03, +5.1576e-05, -8.5138e-08
 };
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
   { 0, 0, 1, 0, 0 }, 
@@ -102,9 +102,12 @@ ref_t avanzar_error_referencia(ref_t error_previo, variables_estado_t estado, re
   for (int i = 0; i < CANT_REF; i++) {
     for (int j = 0; j < CANT_VARIABLES; j++) {
       error_actual.vec[i] += A_d[CANT_VARIABLES + i][j] * estado.vec[j];
+      error_actual.vec[i] -= B_d[CANT_VARIABLES + i] * KH[j] * estado.vec[j];
     }
 
     error_actual.vec[i] += A_d[CANT_VARIABLES + i][CANT_VARIABLES] * error_previo.vec[i];
+    error_actual.vec[i] -= B_d[CANT_VARIABLES + i] * KH[CANT_VARIABLES + i]  * error_previo.vec[i];
+
     error_actual.vec[i] += periodo * referencia.vec[i];
   }
 

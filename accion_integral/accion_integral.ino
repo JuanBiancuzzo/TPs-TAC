@@ -17,15 +17,16 @@ const int CANT_ITERACIONES = 100;
 const float REFERENCIAS[] = { 0 };
 const int NUM_REFERENCIAS = sizeof(REFERENCIAS) / sizeof(float);
 
-const float A_d[CANT_VARIABLES][CANT_VARIABLES] = {
-  { +9.6659e-01, +1.6589e-02, +0.0000e+00, +0.0000e+00, +0.0000e+00}, 
-  { -3.1320e+00, +6.6833e-01, +0.0000e+00, +0.0000e+00, +0.0000e+00}, 
-  { +5.9297e-02, +4.8378e-04, +1.0000e+00, +3.3251e-03, -1.2778e-01}, 
-  { +3.0592e+00, +5.0598e-02, +0.0000e+00, +2.4788e-03, -7.2137e+00}, 
-  { +1.3154e-01, +1.2040e-03, +0.0000e+00, +0.0000e+00, +8.6688e-01}, 
+const float A_d[CANT_VARIABLES + CANT_REF][CANT_VARIABLES + CANT_REF] = {
+  { +9.6659e-01, +1.6589e-02, +0.0000e+00, +0.0000e+00, +0.0000e+00, +0.0000e+00 }, 
+  { -3.1320e+00, +6.6833e-01, +0.0000e+00, +0.0000e+00, +0.0000e+00, +0.0000e+00 }, 
+  { +5.9297e-02, +4.8378e-04, +1.0000e+00, +3.3251e-03, -1.2778e-01, +0.0000e+00 }, 
+  { +3.0592e+00, +5.0598e-02, +0.0000e+00, +2.4788e-03, -7.2137e+00, +0.0000e+00 }, 
+  { +1.3154e-01, +1.2040e-03, +0.0000e+00, +0.0000e+00, +8.6688e-01, +0.0000e+00 }, 
+  { -5.3762e-04, -2.9946e-06, -2.0000e-02, -5.5583e-05, +1.1285e-03, +1.0000e+00 },
 };
-const float B_d[CANT_VARIABLES] = { 
-  +1.0882e-03, +1.0202e-01, +1.8417e-05, +2.9752e-03, +5.1576e-05 
+const float B_d[CANT_VARIABLES + CANT_REF] = { 
+  +1.0882e-03, +1.0202e-01, +1.8417e-05, +2.9752e-03, +5.1576e-05, +0.0000e+00
 };
 const float C_d[CANT_MEDICIONES][CANT_VARIABLES] = { 
   { 0, 0, 1, 0, 0 }, 
@@ -39,10 +40,6 @@ const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = {
 
 const float KH[CANT_VARIABLES + CANT_REF] = {
   +5.3305e+01, +2.2338e+00, -1.6664e+02, -5.5282e-01, +1.5591e+02, +2.3812e+02
-};
-
-const float A_ed[CANT_REF][CANT_VARIABLES] = {
-  { -5.3762e-04, -2.9946e-06, -2.0000e-02, -5.5583e-05, +1.1285e-03 }
 };
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
@@ -103,12 +100,11 @@ ref_t avanzar_error_referencia(ref_t error_previo, variables_estado_t estado, re
   ref_t error_actual = { 0 };
 
   for (int i = 0; i < CANT_REF; i++) {
-    error_actual.vec[i] = error_previo.vec[i];
-
     for (int j = 0; j < CANT_VARIABLES; j++) {
-      error_actual.vec[i] += A_ed[i][j] * estado.vec[j];
+      error_actual.vec[i] += A_d[CANT_VARIABLES + i][j] * estado.vec[j];
     }
 
+    error_actual.vec[i] += A_d[CANT_VARIABLES + i][CANT_VARIABLES] * error_previo.vec[i];
     error_actual.vec[i] += periodo * referencia.vec[i];
   }
 
@@ -181,7 +177,7 @@ void loop() {
 
   // Observador
   variables_estimadas = avanzar_observador(variables_estimadas, mediciones, accion_control);
-  error_ref = avanzar_error_referencia(error_ref, mediciones, referencia);
+  error_ref = avanzar_error_referencia(error_ref, variables_estimadas, referencia);
 
   // Controlador
   accion_control = avanzar_control(variables_estimadas, error_ref);

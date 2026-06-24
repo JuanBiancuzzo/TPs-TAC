@@ -57,7 +57,7 @@ rango = rank(obsv(A, Cposicion));
 if rango == orden
     disp("Es observable cuando solo se mide la posicion");
 else 
-    disp("No es observable cuando solo se mide la posicion");
+    fprintf("No es observable cuando solo se mide la posicion, tiene rango = %d", rango);
 end
 
 % Probamos que pasa si solo se mide el angulo theta
@@ -66,7 +66,7 @@ rango = rank(obsv(A, Cangulo));
 if rango == orden
     disp("Es observable cuando solo se mide el angulo");
 else 
-    disp("No es observable cuando solo se mide el angulo");
+    fprintf("No es observable cuando solo se mide el angulo, tiene rango = %d", rango);
 end
 
 % Demostramos que es observable al medir ambas 
@@ -74,7 +74,7 @@ rango = rank(obsv(A, C));
 if rango == orden
     disp("Es observable el sistema");
 else 
-    disp("No es observable el sistema");
+    fprintf("No es observable el sistema, tiene rango = %d", rango);
 end
 
 
@@ -83,16 +83,18 @@ end
 polos = [ -40 -62 -22 -300 -14.28 ];
 L = place(A_d', C_d', exp(polos * dt))';
 mostrar_matriz(L', "L_T");
+% log(eig(A_d - L * C_d)') / dt
 
 %% Usando Kalman Filter
 % x = [theta omega posicion velocidad x_3]
 V_d = diag([ 0.1, 1, 0.2, 4, 0.4 ]); 
 % y = [posicion theta]
 V_n = diag([ 0.3, 0.05 ]);
-[Lkf_T, _, E] = dlqr(A_d', C_d', V_d, V_n);
+Lkf = dlqr(A_d', C_d', V_d, V_n)';
 
-mostrar_matriz(Lkf_T, "L_kf_T");
-disp(log(E') / dt);
+mostrar_matriz(Lkf', "L_kf");
+disp(log(eig(A_d - Lkf * C_d)') / dt);
+
 
 %% Mostrar matriz
 function [] = mostrar_matriz(matriz, nombre)
@@ -109,4 +111,3 @@ function [] = mostrar_matriz(matriz, nombre)
     end
     fprintf("}\n");
 end
-

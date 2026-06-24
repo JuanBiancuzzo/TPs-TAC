@@ -164,19 +164,518 @@
 \newpage
 
 \section{Modelo}
+\begin{comment}
+    En esta seccion quiero mostrar cuales son los ejes del sistema (posicion y angulos) como lo definimos en el tp anterior, con la imagen de sentidos_planta.png - Done
+\end{comment}
+En esta sección se detallará el modelo de la planta tomado para este trabajo, y cómo difiere al trabajo anterior. Se recuerda en la figura \ref{fig:sentidos-de-la-planta} los sentidos de referencia adoptados en el trabajo previo y que se siguen manteniendo en este. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\linewidth]{imagenes/sentidos_planta.png}
+    \caption{Direcciones definidas para el ángulo de la barra y la posición del carrito.}
+    \label{fig:sentidos-de-la-planta}
+\end{figure}
 
 \subsection{Reidentificación}
+\begin{comment}
+    Después mecionar que se reduce el orden de nuestra identificación, por un tema de simplicidad en los pasos siguientes, y mantener una relación física para las variables.
+
+    Mostrar que teniendo un delay, mostrar una comparación entre el modelo de orden 3 y orden 2 identificado
+\end{comment}
+
+Se optó por reducir el orden del modelo, reduciendo en particular el orden del sistema servo-barra, donde previamente la transferencia identificada fue:
+
+\begin{align*}
+    P_{sb} &= \frac{1214}{s^3 + 203.6 ~ s^2 + 3285 ~ s + 3.798 \times 10^4} \\
+     &= \frac{1214}{(s^2 + 16.47 ~ s + 203) ~ (s + 187.1)}
+\end{align*}
+
+Se tomó esta decisión con la intención de reducir la complejidad del sistema, tomando que el polo de $p = -187.1$ tiene una dinámica muy rápida en relación a los polos complejos conjugados y que las características del sistema se pueden representar fielmente con los $2$ polos restantes.
+
+Se verifica esta afirmación reidentificando el sistema servo-barra como un sistema de orden $2$ y tomando un delay de $d = 2$ periodos para el entrenamiento, que no se incluye en el sistema servo-barra sino en el sistema completo. 
+
+\subsubsection{Planta servo-barra orden $2$: identificación}
+
+Para la identificación de la planta se parte de la función de transferencia, que de forma genérica se toma como:
+\begin{align*}
+    P_{sb} = \frac{\Theta_b(s)}{U(s)} = \frac{b_0}{s^2 + a_1 ~ s + a_0}
+\end{align*}
+% perdon pipipipi nuuu :_(
+Esta función de transferencia se pasa a discreta, utilizando backwards difference, donde $s = \frac{z - 1}{T z}$. Como se espera que los polos sean lentos, utilizar backwards difference permite tener ecuaciones en diferencias más simples, en contraste al útilizar el método bilineal, y al mismo tiempo obtener un resultado suficientemente similar.
+
+La planta en discreta tendrá la siguiente forma:
+\begin{align*}
+    P_{sb,z} = \frac{\Theta_b(z)}{U(z)} = \frac{\beta_0}{\alpha_2 ~ z^{-2} + \alpha_1 ~ z^{-1} + \alpha_0}
+\end{align*}
+Donde: \begin{equation*}
+    \begin{cases}
+        \beta_0 = b_0 ~ T^2\\
+        \alpha_2 = 1 \\
+        \alpha_1 = -2 - a_1 ~ T \\
+        \alpha_0 = 1 + a_1 ~ T + a_0 ~ T^2
+    \end{cases}
+\end{equation*}
+Con esta transferencia se tiene la siguiente ecuación en diferencias:
+\begin{align*}
+    \theta_b[k] = -\frac{\alpha_2}{\alpha_0} \theta_b[k - 2] - \frac{\alpha_1}{\alpha_0} \theta_b[k - 1] + \frac{\beta_0}{\alpha_0} u[k]
+\end{align*}
+Como se mencionó previamente, se va a tener en cuenta que existe un delay de $d$ periodos, por lo que se puede incluir esto en la ecuación en diferencias de la siguiente forma:
+\begin{align*}
+    \theta_b[k] = -\frac{\alpha_2}{\alpha_0} \theta_b[k - 2] - \frac{\alpha_1}{\alpha_0} \theta_b[k - 1] + \frac{\beta_0}{\alpha_0} u[k - d]
+\end{align*}
+
+Con mediciones de la salida y la entrada de la planta, se utilizó el método de regresión lineal para encontrar las constantes que mejor ajusten a los datos. 
+
+Se tomaron las mismas mediciones que en el trabajo anterior para el entrenamiento y la validación. En el gráfico \ref{fig:validacion_reidentificacion} se puede observar el ángulo medido comparado con el generado a partir de la planta identificada en este trabajo y en el trabajo anterior. La respuesta que generan ambas plantas es prácticamente la misma.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/validacion_reidentificacion.png}
+    \caption{Gráfico temporal del {angulo de barra ante una secuencia de la acción de control comparando la medición y la respuesta de la planta servo-barra de este trabaja y del anterior.}}
+    \label{fig:validacion_reidentificacion}
+\end{figure}
+
+
+\begin{comment}
+    Se toma una primera medición del ángulo de la barra ante un escalón del ancho del PWM, a partir de esta se calcula los parámetros del modelo que se gráfica a continuación. Se debe considerar que se realizó esta medición con el carrito sobre la planta.
+
+% Grafico temporal del angulo
+
+Se prueba el modelo con una medición distinta para validar su funcionamiento, y esta se presenta a continuación
+
+% Grafico de confirmación
+\end{comment}
+
+La planta en continua obtenida a partir del modelo fue la expresada a continuación. 
+
+\begin{align*}
+    P_{sb} &= \frac{6.15}{s^2 + 17.98 ~ s + 188.8}
+\end{align*}
+
+Planteando la ecuación diferencial a partir de la planta obtenida en continua y tomando de variables de estados la salida de $P_{sb}$ y la salida derivada, se plantea la siguiente representación en espacio de estados. 
+
+
+\begin{gather*}
+    \begin{pmatrix} \dot{\theta_b} \\ \ddot{\theta_b} \end{pmatrix} = 
+    \begin{pmatrix}
+          0 & 1 \\
+        -188.8 & -17.98
+    \end{pmatrix} 
+    \begin{pmatrix} \theta_b \\ \dot{\theta_b} \end{pmatrix} +
+    \begin{pmatrix} 0 \\ 6.15 \end{pmatrix} ~ u \\
+    \theta_b = \begin{pmatrix} 1 & 0 \end{pmatrix}
+    \begin{pmatrix} \theta_b \\ \dot{\theta_b} \end{pmatrix}
+\end{gather*}
+
+\subsubsection{Planta completa}
+
+Se mantuvo del trabajo anterior la identificación del sistema barra-carrito, por lo tanto el sistema final es de orden $5$ y su función de transferencia estará dada por:
+
+\begin{align*}
+    P = P_{sb} ~ P_{bc} = \frac{7.5 \times 10^3 ~ (s - 7.14)}{s (s + 300) (s + 7.14) (s^2 + 17.98 ~ s + 188.8)}
+\end{align*}
+
+Con la siguiente representación en espacio de estados:
+
+\begin{gather*}
+    \begin{pmatrix} 
+        \dot{\theta_b} \\ \ddot{\theta_b} \\ \dot{p} \\ \ddot{p} \\ \dot{x_3}  
+    \end{pmatrix} = 
+    \begin{pmatrix}
+        0 & 1 & 0 & 0 & 0 \\
+        -188.8 & -17.98 & 0 & 0 & 0 \\
+        0 & 0 & 0 & 1 & 0 \\ 
+        1222 & 0 & 0 & -300 & -2444 \\ 
+        7.14 & 0 & 0 & 0 & -7.14
+    \end{pmatrix} 
+    \begin{pmatrix} 
+        \theta_b \\ \dot{\theta_b} \\ p \\ \dot{p} \\ x_3
+    \end{pmatrix} +
+    \begin{pmatrix} 0 \\ 6.15 \\ 0 \\ 0 \\ 0 \end{pmatrix} ~ u \\
+    p = \begin{pmatrix} 0 & 0 & 1 & 0 & 0 \end{pmatrix}
+    \begin{pmatrix} 
+        \theta_b \\ \dot{\theta_b} \\ p \\ \dot{p} \\ x_3
+    \end{pmatrix}
+\end{gather*}
+
+\subsection{Discretización del modelo}
+\begin{comment}
+    Finalmente se habla de la discretización del sistema, como el metodo de suponer que expm(A * T) \ne I + A * T, y por lo tanto
+    se opta por la transformación correcta
+\end{comment}
+
+Para el proceso de discretización del sistema en función de las matrices de la representación en espacio de estado se utiliza el método de zero-order hold (zoh) que, asumiendo que la matriz $A$ es inversible, \cite{discretizacion-zoh} está dado por:
+\begin{align*}
+    A_d &= e^{A T} & C_d &= C \\
+    B_d &= A^{-1} (A_d - \mathbb{I}) B & D_d &= D
+\end{align*}
+
+Se puede expresar la exponencial matricial a partir de la siguiente serie:
+
+\begin{align*}
+    e^M = \sum_{n = 0}^{\infty} \frac{M^n}{n!}
+\end{align*}
+
+Donde se podría aproximar tomando los primeros $2$ términos, en el caso que los términos restantes sean despreciables, y por ende llevaría a la siguiente discretización. 
+
+\begin{align*}
+    A_d &= \mathbb{I} + A T & C_d &= C \\
+    B_d &= B T & D_d &= D
+\end{align*}
+
+Para decidir qué discretización se utilizará a lo largo del trabajo, se tomará la diferencia entre $A_d = e^{A T}$ y $A_d = \mathbb{I} + A T$ y analizar si es realmente despreciable. 
+
+\begin{gather*}
+    A_d = e^{A T} = \begin{pmatrix}
+        0.9666 & 0.0166 & 0 &      0 &       0 \\
+       -3.1320 & 0.6683 & 0 &      0 &       0 \\
+        0.0593 & 0.0005 & 1 & 0.0033 & -0.1278 \\
+        3.0592 & 0.0506 & 0 & 0.0025 & -7.2137 \\
+        0.1315 & 0.0012 & 0 &      0 &  0.8669 \\
+    \end{pmatrix} \\ \\ 
+    \Delta A_d = e^{A T} - (\mathbb{I} + A T) = \begin{pmatrix}
+       -0.0334 & -0.0034 & 0 &       0 &        0 \\
+        0.6440 &  0.0279 & 0 &       0 &        0 \\
+        0.0593 &  0.0005 & 0 & -0.0167 &  -0.1278 \\
+      -21.3808 &  0.0506 & 0 &  5.0025 &  41.6663 \\
+       -0.0113 &  0.0012 & 0 &       0 &   0.0097 \\
+    \end{pmatrix} \\ 
+\end{gather*}
+
+Se toma que los términos restantes de la aproximación no son despreciables, por lo que a lo largo del trabajo no se aproximará la discretización como $A_d = \mathbb{I} + A T$. 
+
+Finalmente, al discretizar se obtienen el siguiente sistema en representación en espacio de estados discreto:
+\begin{gather*}
+    \begin{pmatrix} 
+        \theta_b[k+1] \\ \dot{\theta_b}[k+1]  \\ p[k+1]  \\ \dot{p}[k+1]  \\ x_3[k+1]   
+    \end{pmatrix} = 
+    \begin{pmatrix}
+        0.9666 & 0.0166 & 0 &      0 &       0 \\
+       -3.1320 & 0.6683 & 0 &      0 &       0 \\
+        0.0593 & 0.0005 & 1 & 0.0033 & -0.1278 \\
+        3.0592 & 0.0506 & 0 & 0.0025 & -7.2137 \\
+        0.1315 & 0.0012 & 0 &      0 &  0.8669 \\
+    \end{pmatrix} 
+    \begin{pmatrix} 
+        \theta_b[k] \\ \dot{\theta_b}[k] \\ p[k] \\ \dot{p}[k] \\ x_3[k]
+    \end{pmatrix} +
+    \begin{pmatrix} 0.0011 \\ 0.1020 \\ 0.0000 \\ 0.0030 \\ 0.0001 \end{pmatrix} ~ u[k] \\
+    p[k] = \begin{pmatrix} 0 & 0 & 1 & 0 & 0 \end{pmatrix}
+    \begin{pmatrix} 
+        \theta_b[k] \\ \dot{\theta_b}[k] \\ p[k] \\ \dot{p}[k] \\ x_3[k]
+    \end{pmatrix}
+\end{gather*}
 
 \section{Observador}
 
+\subsection{Observabilidad}
+\begin{comment}
+    Primero queremos mostrar el test de observabilidad, toamando los distintos C, donde se prueba que es observable cuando solo se mide la posición, pero no observable cuando solo se mide el angulo
+\end{comment}
+Para definir si el sistema es observable, se verifica que la matriz de observabilidad $\mathcal{O}$ tenga rango igual a $5$, es decir, el orden del sistema. La matriz de observabilidad está dada por:
+
+\begin{gather*}
+    \mathcal{O} = \begin{pmatrix}
+        C \\ C A \\ C A^2 \\ C A^3 \\ C A^4
+    \end{pmatrix}
+\end{gather*}
+
+Se analizó la observabilidad del sistema tomando como salida la posición, el ángulo y ambas. Esto modifica la matriz $C$ de la representación en espacio de estados, y en cada caso se calculó la matriz de observabilidad y su rango. 
+
+\begin{align*}
+    C &= \begin{pmatrix}
+        0 & 0 & 1 & 0 & 0 \\
+    \end{pmatrix} \implies rank(\mathcal{O}) = 5 \\\\
+    C &= \begin{pmatrix}
+        1 & 0 & 0 & 0 & 0 \\
+    \end{pmatrix} \implies rank(\mathcal{O}) = 2 \\\\
+    C &= \begin{pmatrix}
+        0 & 0 & 1 & 0 & 0 \\
+        1 & 0 & 0 & 0 & 0 \\
+    \end{pmatrix} \implies rank(\mathcal{O}) = 5
+\end{align*}
+
+Se puede observar que al medir únicamente el ángulo, se tiene un rango menor al orden del sistema. El sistema, al medir el ángulo de la barra, solo puede observar el ángulo y la velocidad angular. 
+
+Para este trabajo se mide la posición $p$ y el ángulo de la barra $\theta_b$, por lo que modifica la matriz $C$ llevando a un sistema que sigue siendo, como bien se demostró, observable.
+
+\begin{equation*}
+    \begin{pmatrix} p \\ \theta_b \end{pmatrix} = 
+    \begin{pmatrix}
+        0 & 0 & 1 & 0 & 0 \\
+        1 & 0 & 0 & 0 & 0 \\
+    \end{pmatrix} 
+    \begin{pmatrix} 
+        \theta_b \\ \dot{\theta_b} \\ p \\ \dot{p} \\ x_3
+    \end{pmatrix}
+\end{equation*}
+
+\subsection{Diseño del observador}
+\begin{comment}
+    Despues mostrar el observador, justificando de forma general que se busca tener una frecuencia mayor a los polos de la planta, pero no tan rapido ya que de la expresión se muestra que aparece ruido al aumentar el valor de L. También se tiene que aclarar que se busca tener los polos lo más rápido posibles porque se busca que el estado estimado/observado converga lo más rápido que sea posible al "estado real" del sistema, para que en la realimentación se pueda esperar que el estado estimado es una buena representación del estado real.
+\end{comment}
+El observador es una herramienta que permite estimar las variables de estado. Se busca que las estimaciones converjan a las variables de estado reales, por lo que tienen que seguirlas, al menos a la misma velocidad. Considerando esto, se buscó crear un observador donde los polos propuestos para el observador sean los de la planta o mayores. 
+
+Utilizando el método de pole placement, se podría elegir polos arbitrariamente altos, lo que implicaría una convergencia rápida a las variables de estado reales. Sin embargo, hay que considerar que existe un ruido de medición, por lo que partiendo de las ecuaciones en variables de estado, incluyendo el ruido de medición, se llega a lo siguiente:
+
+\begin{align*}
+    \dot{\hat{x}} &= A \hat{x} + L(y + \eta - \hat{y}) + B u  \\
+    \dot{\hat{x}} - \dot{x} &= A \hat{x} + L(y + \eta - \hat{y}) + Bu - Ax - Bu, & e = \hat{x} - x \\
+    \dot{e} &= A (\hat{x} - x) + L(C x + \eta - C \hat{x}) \\
+     &= A e + L C (x - \hat{x}) + L \eta \\
+     &= (A - LC) e + L \eta
+\end{align*}
+
+Utilizando el método de pole placement, se eligen los autovalores de la matriz $A-LC$ y se despeja $L$. Esta matriz describe la dinámica del error, por lo que elegir polos estables asegura que con el tiempo, el error converja a $0$. Y el tiempo que le lleva dependerá de que tan rápidos se eligen estos polos. Sin embargo, se puede observar que el ruido de medición queda amplificado por el observador. Suponiendo que la frecuencia del ruido es mayor a la de los polos del sistema, esto impone una cota superior en la elección de los polos. Una cota inferior serían los polos de la propia planta, ya que el observador debe ser suficientemente rápido para seguirla.
+
+También es importante aclarar que se utilizó el método de filtro de Kalman como guía en la elección de los autovalores, ya que se vuelve más intuitivo la modificación de las matrices correspondiente al ruido de medición y las perturbaciones del sistema, iterando sobre las mismas con valores relacionados a factores de interés. 
+
+\begin{comment}
+    Después justificar por partes la elección de polos, para la parte de servo barra, por la identificación se tiene dos polos complejos conjugados de -6.5 \pm 11 j. Por lo que se buscó valores de frecuencias mayores a estos polos, puramente reales. Aprovechamos que el sensor correspondiente al angulo tiene menos ruido por lo que se puede aumentar la velocidad de estos polos teniendo una mejor representación de esas variables de estado
+
+    Para la parte de la posicion, velocidad y la variable x_3, se mantuvo la frecuencia de 300, y partiendo de las frecuencias dada por el modelo, se empezó a aumentar para tener buena convergencia, hasta ver que el ruido sea lo menor posible.
+\end{comment}
+Partiendo del criterio mencionado, se obtuvo un observador con la matriz $L$ dado por los polos:
+
+\begin{equation*}
+    L_\lambda = \begin{pmatrix} -40 & -62 & -22 & -300 & -14.3 \end{pmatrix}
+\end{equation*}
+
+Para validar este observador, se muestra en la figura \ref{fig:grafico_observador} una comparación de las variables de estado medidas y simuladas, y el resultado obtenido al estimarlas por el observador a partir de una secuencia escalonada de la acción de control. En la simulación las variables de estado generadas y las observadas son exactamente iguales, por esto no se colocan ambas en los gráficos. Cabe aclarar que las mediciones reales solo se pueden hacer del ángulo y velocidad angular de la plataforma, y la posición del carrito. La velocidad se aproximó por medio de la posición a partir de su derivada. También es relevante mencionar que no se muestra la variable de estado $x_3$ ya que no se puede medir y su aproximación es demasiado ruidosa, además de que no se consideró valiosa para la validación.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/observador.png}
+    \caption{Gráfico temporal de las variables de estado medidas y simuladas y las variables de estado observadas ante una secuencia escalonada de la acción de control.}
+    \label{fig:grafico_observador}
+\end{figure}
+
+Se puede ver como el seguimiento de todas las variables de estado es rápido, aunque se podría considerar que aparece ruido de la medición en la posición. Para los apartados siguientes se tendrá en consideración este aspecto y se mencionará si es necesario un cambio del observador. 
+
 \section{Diseño del controlador}
+En esta sección se diseñará un controlador por realimentación de estados, sin referencia, con referencia utilizando la ganancia de feedforward y utilizando acción integral. Tomando como convención de signos lo siguiente: 
+\begin{align*}
+    \begin{gathered}
+        u = -K x \\ \text{(Sin referencia)}    
+    \end{gathered} && 
+    \begin{gathered}
+        u = -K x + Fr \\ \text{(Con feedforward)}    
+    \end{gathered} && 
+    \begin{gathered}
+        u = -\begin{pmatrix} K & H \end{pmatrix} \begin{pmatrix} x \\ q \end{pmatrix} \\ 
+        \text{(Con acción integral)}    
+    \end{gathered} 
+\end{align*}
+
+Se aclara que para todos las figuras no se incluirá la variable de estado $x_3$ por la misma razón que no se incluyó en la sección del observador. Además, para el diseño de los controladores se utilizó como guía el método LQR (linear quadratic regulator) para la elección de los autovalores de las matrices correspondientes, en las cuales se entrará en mayor detalle más adelante. Con este método se puede analizar cómo van cambiando los polos a medida que cambia la penalización que se le da a cada variable de estado para el control, lo cual resulta más intuitivo que simplemente mover los polos y hacerlos más o menos rápidos.  
+
+% Ver si mencionar acá lo teorico de LQR
 
 \subsection{Realimentación sin referencia}
+\begin{comment}
+    Mencionar concepto de direcciones más controlables utilizando el svd de la matriz se controlabilidad    
+\end{comment}
+Para la realimentación en variables de estado, utilizando el método de pole placement, se podría diseñar la dinámica del sistema controlado como se desee. En la práctica se observó que no se puede apartar arbitrariamente de los polos originales, por lo que partiendo de estos, se fueron modificando los polos para lograr que con la acción del controlador las variables de estado vuelvan a su punto de equilibrio. 
+
+En el proceso de diseño del controlador, resultó notorio que la velocidad angular y velocidad del carrito lograba llegar a cero, es decir, que el controlador tendía a frenar el carrito pero se le dificultaba llevar el ángulo de la barra y la posición del carrito al punto de equilibrio. A partir de esta observación, se buscó si existe una explicación o un error en la metodología de diseño adoptada. 
+
+Se encontró que utilizando una descomposición por valores singulares, SVD, en la matriz de controlabilidad $\mathcal{C}$ se obtienen las direcciones controlables en forma descendente, donde se obtuvó lo siguiente:
+
+\begin{align*}
+    U &= \begin{pmatrix}
+         0      &  0.1518 &  0.6714 & 0.6839 &  0.2416 \\
+        -0.0004 &  0.9595 & -0.2764 & 0.0536 &  0.0133 \\ 
+        -0.0033 & -0.1395 & -0.3908 & 0.6423 & -0.6444 \\
+         1      & -0.0001 & -0.0014 & 0.0021 & -0.0021 \\
+         0      & -0.1921 & -0.5658 & 0.3418 &  0.7254 
+    \end{pmatrix} & 
+    \Sigma &= diag\begin{pmatrix}
+        7.53 \times 10^{8} \\
+        5.42 \times 10^{3} \\
+        3.43 \times 10^{2} \\
+        1.77  \\
+        8.32 \times 10^{-2}
+    \end{pmatrix}
+\end{align*}
+
+Se puede analizar que las primeras $2$ direcciones, las cuales son las direcciones más controlables, corresponden a la velocidad de carrito y a la velocidad angular de la barra, respectivamente. Esto confirma las observaciones realizadas en el proceso de diseño, y se considerará en los resultados del controlador.
+
+Finalmente, teniendo en cuenta la explicación mencionada y el criterio para elegir los polos del controlador, se terminó eligiendo los polos 
+\begin{equation*}
+    K_\lambda = \begin{pmatrix} -12.7-14.3i & -12.7+14.3i & -7.14 & -5.44 & -300 \end{pmatrix}
+\end{equation*}
+
+Para comprobar el correcto funcionamiento del controlador, se midieron las variables de estado golpeando el carrito a ambos lados. Se simuló esta situación considerando esta perturbación impulsiva y se compararon las variables de estado medidas y simuladas, además de las variables observadas medidas. Esta comparación se puede ver en las  figuras  \ref{fig:graf_sinref_pos} y \ref{fig:graf_sinref_neg}. 
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/impulso_pos_sin_ref.png}
+    \caption{Gráfico temporal de las variables de estado medidas, comparadas con las variables observadas medidas y simuladas ante un golpe al carrito en sentido positivo.}
+    \label{fig:graf_sinref_pos}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/impulso_neg_sin_ref.png}
+    \caption{Gráfico temporal de las variables de estado medidas, comparadas con las variables observadas medidas y simuladas ante un golpe al carrito en sentido negativo.}
+    \label{fig:graf_sinref_neg}
+\end{figure}
+
+En la simulación resulta notorio el efecto del cero de fase no mínima por la aproximación de Padé utilizada para modelar el retardo de la planta, presentándose como sobrepicos ante los cambios de dirección de las variables. Además, en la simulación el controlador logra llevar a todas las variables de estado a su punto de equilibrio. En la realidad, el carrito queda frenado pero la barra se mantiene inclinada, con el carrito en una posición distinta al origen. Por más que la barra esté inclinada, no se logró vencer a la fricción estática del carrito. Este resultado viene de la mano con que la posición no es una variable de estado tan controlable como así lo son la velocidad del carrito y la velocidad angular. 
 
 \subsection{Realimentación con referencia}
+\begin{comment}
+    Mostrar calculo de F
+\end{comment}
+Partiendo de las ecuaciones de variables de estado, se incluye el término de referencia acompañado de la matriz de feedforward $F$ en la definición de la acción de control.
+
+\begin{align*}
+    \dot{x} &= (A - BK) x + BF r \\
+    y &= C x
+\end{align*}
+Transformando por Laplace, y despejando $F$ se obtiene una expresión en función de $A$, $B$, $C$ y $K$.
+\begin{align*}
+    s X(s) &= (A - BK) X(s) + BF ~ R(s) \\
+    (s \mathbb{I} - (A - BK)) X(s) &= BF ~ R(s) \\
+    X(s) &= (s \mathbb{I} - (A - BK))^{-1} BF ~ R(s) \\
+    Y(s) &= C (s \mathbb{I} - (A - BK))^{-1} BF ~ R(s) \\
+    \frac{Y(s)}{R(s)} &= C (s \mathbb{I} - (A - BK))^{-1} BF \\
+    F(s) &= (C (s \mathbb{I} - (A - BK))^{-1} B)^{-1}
+\end{align*}
+Por lo que se interpreta que $F$ cancela la dinámica de la planta controlada por realimentación, logrando así un seguimiento perfecto de la referencia. Este planteo tiene el problema de suponer que el sistema está perfectamente identificado, además del agregado un nivel más de complejidad al tener una nuevo sistema representado por la transferencia de feedforward. 
+
+Para simplificar el problema, se plantea a $F$ como una ganancia, donde el error entre la salida $Y(s)$ y la referencia $R(s)$ sea nula en estado estacionario. Se puede plantear el teorema del valor final, obteniendo la siguiente expresión.
+
+\begin{align*}
+    e_{ss} &= \lim_{s \to 0} s (R(s) - Y(s)) \\ 
+     &= \lim_{s \to 0} s \left(\mathbb{I} - C (s \mathbb{I} - (A - BK))^{-1} BF \right) R(s) \\
+\end{align*}
+
+Para conseguir un error en estado estacionario nulo para toda referencia, se puede plantear lo siguiente:
+\begin{equation*}
+    \lim_{s \to 0} s \left(C (s \mathbb{I} - (A - BK))^{-1} B \right) F = \mathbb{I} 
+\end{equation*}
+
+Al plantear que $F$ es una matriz de ganancia, esta no depende de la frecuencia $s$, por lo que se puede despejar de la siguiente forma:
+\begin{align*}
+    F &= \left( \lim_{s \to 0} s \left(C (s \mathbb{I} - (A - BK))^{-1} B \right) \right)^{-1} \\
+     &= \left(C (\mathbb{I} - (A - BK))^{-1} B \right)^{-1} 
+\end{align*}
+
+Finalmente para el caso discreto, la matriz de ganancias de feedforward está dado por:
+\begin{equation*}
+    F = \left(C_d (\mathbb{I} - (A_d - B_d K))^{-1} B_d \right)^{-1}
+\end{equation*}
+
+Se calculó este valor a partir de los valores obtenidos de la discretización y la matriz $K$, y se generó una secuencia de referencias de posición del carrito con referencia nula para el ángulo de la plataforma. El resultado se puede ver en la figura \ref{fig:graf_feedforward}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/variables_feedforward.png}
+    \caption{Gráfico temporal de las variables de estado medidas, comparadas con las variables observadas, medidas y simuladas ante una secuencia escalonada de referencia de posición.}
+    \label{fig:graf_feedforward}
+\end{figure}
+
+Se puede observar que la posición sigue la forma de la referencia pero no logra llegar a esos valores finales debido a que el carrito se frena antes. Esto está asociado nuevamente a que la posición no es una variable muy controlable y aparecen efectos que no fueron modelados y afectan al comportamiento del sistema real.
 
 \subsection{Realimentación con referencia y acción integral}
+\begin{comment}
+    Explicación teorica de la acción de control, y mostrar su discretización
 
+    Se tiene que mencionar que se tuvo que rediseñar el observador ya que previamente se pusieron polos demasiado rápidos para la posición y velocidad, pero con la contra de incluir mucho ruido, por lo que se bajaron esos polos
+\end{comment}
+Para implementar la realimentación por espacio de estados con acción integral se extiende el sistema para incluir la variable de estado referente al error de la salida comparada con la referencia, generalmente llamada $q$. En esta sección, se toma como salida del sistema simplemente la posición del carrito para luego ser comparada con una referencia. Para el observador, se siguen tomando la posición y el ángulo como salida, por lo que se podría seguir utilizando el mismo observador desarrollado anteriormente.
+
+Con esto se puede obtener el sistema extendido dado por: 
+\begin{align*}
+    \begin{pmatrix} \dot{x} \\ \dot{q} \end{pmatrix} &= 
+    \underbrace{\begin{pmatrix}
+        A & 0 \\
+       -C & 0
+    \end{pmatrix}}_{\tilde{A}} 
+    \begin{pmatrix} x \\ q \end{pmatrix} + 
+    \underbrace{\begin{pmatrix} B \\ 0 \end{pmatrix}}_{\tilde{B}} u 
+     + \begin{pmatrix}
+         0 \\ 1
+     \end{pmatrix} 
+     r_p\\
+    p &= \begin{pmatrix} C & 0 \end{pmatrix}
+    \begin{pmatrix} x \\ q \end{pmatrix}
+\end{align*}
+
+Estableciendo la acción de control, utilizando la convención de signos mencionado al inicio de esta sección, se puede expresar el sistema de la siguiente forma:
+\begin{align*}
+    \begin{pmatrix} \dot{x} \\ \dot{q} \end{pmatrix} &= \tilde{A} 
+    \begin{pmatrix} x \\ q \end{pmatrix} - 
+    \tilde{B} \begin{pmatrix} K & H \end{pmatrix}  
+    \begin{pmatrix} x \\ q \end{pmatrix} \\
+     &= \left( \tilde{A} - \tilde{B} \begin{pmatrix} K & H \end{pmatrix} \right)
+    \begin{pmatrix} x \\ q \end{pmatrix} \\
+\end{align*}
+
+Se utiliza el método de pole placement eligiendo los autovalores de la matriz $\tilde{A} - \tilde{B} \begin{pmatrix} K & H \end{pmatrix}$, y se despejan las matrices $K$ y $H$.
+
+Considerando que no se puede realizar la aproximación de discretización dada por $e^{A T} \simeq \mathbb{I} + A T$ sin cometer un error no despreciable, por discretización se obtiene las matrices: 
+\begin{align*}
+    \begin{pmatrix} x[k + 1] \\ q[k + 1] \end{pmatrix} =&
+    \underbrace{\begin{pmatrix}
+         0.967 & 0.017 & 0 & 0     &  0     & 0 \\
+        -3.132 & 0.668 & 0 & 0     &  0     & 0 \\
+         0.930 & 0     & 1 & 0.003 & -0.128 & 0 \\
+         3.059 & 0.060 & 0 & 0.002 & -7.213 & 0 \\
+         1.315 & 0.001 & 0 & 0     &  0.867 & 0 \\
+         -5.37 \times 10^{-4} & -2.99 \times 10^{-6} & -0.02 & -5.56 \times 10^{-5} & 1.13 \times 10^{-3} & 1
+    \end{pmatrix}}_{\tilde{A}_d}
+    \begin{pmatrix} x[k] \\ q[k] \end{pmatrix} \\
+     &- \underbrace{\begin{pmatrix}  
+        0.001 \\ 0.102 \\ 0 \\ 0.003 \\ 0 \\ 0 
+    \end{pmatrix}}_{\tilde{B}_d}
+    \begin{pmatrix} K & H \end{pmatrix} 
+    \begin{pmatrix} x[k] \\ q[k] \end{pmatrix}
+\end{align*}
+
+Se debe realizar un hincapié en los valores de las matrices para mostrar que existe una expresión de actualización del $q$ dada por la siguiente expresión:
+\begin{equation*}
+    q[k + 1]= \tilde{A}_{d~6} 
+    \begin{pmatrix} x[k] \\ q[k] \end{pmatrix}
+    + \tilde{B}_{d~6} 
+    \begin{pmatrix} K & H \end{pmatrix} 
+    \begin{pmatrix} x[k] \\ q[k] \end{pmatrix} + r_p ~ T
+\end{equation*}
+con $T = 0.02$, el período de control. 
+
+Al empezar a controlar, utilizando el observador de secciones anteriores, se notó que el control se veía afectado por el ruido proveniente de la medición de la posición del carrito, principalmente por su componente derivativa. Considerando esto, se modificó el observador, reduciendo la velocidad del seguimiento de la posición con la intención de disminuir el nivel de ruido de medición, finalmente obteniendo los siguientes polos del observador:
+\begin{equation*}
+    L_\lambda = \begin{pmatrix} -11.9-5.74i & -11.9+5.74i & -24.3 & -40.5 & -300 \end{pmatrix}
+\end{equation*}
+
+Utilizando este nuevo observador, se diseñó el controlador, partiendo nuevamente de los polos de la planta, y un polo lento correspondiente a la acción integral. Estas se fueron modificando hasta cumplir el criterio mínimo de validez. A lo largo de este proceso, se observó el efecto mencionado en la sección de realimentación sin referencia, donde la posición es una variable de estado difícil de controlar, sumado al efecto de la fricción estática de la barra con el carrito. Existen efectos no lineales que no tiene en cuenta el modelo lineal, por lo que se espera que exista efectos en el sistema real que no existen en la simulación.
+
+Dentro de estas limitaciones de modelado, y planta física, se obtuvieron los siguientes polos:
+\begin{equation*}
+    \begin{pmatrix} K & H \end{pmatrix}_\lambda = \begin{pmatrix} 
+        -3.59-0.84i & -3.59+0.84i & -7.14 & -8.30 & -276 & -309 
+    \end{pmatrix}
+\end{equation*}
+
+Para validar el correcto funcionamiento, se generó una secuencia de referencias de posición del carrito, alrededor de su punto de equilibrio. El resultado comparado con la simulación se puede ver en la figura \ref{fig:graf_accion_integral}.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{imagenes/grafico_accion.png}
+    \caption{Gráfico temporal de las variables de estado medidas, comparadas con las variables observadas, medidas y simuladas ante una secuencia escalonada de referencia.}
+    \label{fig:graf_accion_integral}
+\end{figure}
+
+Se encontró una manera de lograr reducir el ruido que se observa en la posición. Sin embargo, estas vibraciones ayudan al carrito a combatir la fricción y poder llegar al valor final de la referencia sin que se incline tanto la barra, lo que una vez que el carrito se empieza a mover lleva a que se pase de la referencia. No se obtiene una misma respuesta para cada pulso, ni tampoco se llega al valor final para todos ellos. En general, se puede considerar que el tiempo de establecimiento está alrededor de
+\SI{1.75}{\second} en el mejor de los casos y \SI{2.5}{\second} en el peor, aunque en algunos pulsos no logra llegar exactamente al valor de referencia. 
+El sobrepico alcanzado por la posición, cuando no hay ruido es un $10\%$ del valor final. En los peores casos, en la dirección positiva de la posición, el sobrepico llega a un $20\%$ y en la dirección contraria a un $50\%$. Es notorio que en este sentido afecta el peso del carrito al torque de la barra, un efecto que tampoco fue modelado. En la simulación, hay un pequeño sobrepico pero asociado al cero de fase no mínima del $0.6\%$ del valor final y un tiempo de establecimiento de \SI{2.5}{\second}.
+Con el diseño del controlador, se busca un tiempo de establecimiento de \SI{2.5}{\second} y un sobrepico menor al $15\%$. Esto se logra en líneas generales, pero no para todo pulso de referencia, lo cual se atribuye a todos los efectos que se fueron analizando al largo del trabajo. 
+
+También cabe mencionar que al disminuir la velocidad de seguimiento de la posición, utilizando el razonamiento detrás del filtro de Kalman, se puede interpretar que se está dando más peso al modelo que a las mediciones, lo cual es un efecto que se ve al comparar la curvas de medición y la curva del observador.
+
+\section{Referencias}
 \renewcommand{\section}[2]{}
 \bibliographystyle{IEEEtran}
 \bibliography{referencias.bib}

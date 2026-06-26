@@ -14,8 +14,8 @@ const int ECHO_PIN     = 12;
 
 // CANT_ITERACIONES * periodo_millis / 1000 = tiempo que el servo esta en un angulo
 const int CANT_ITERACIONES = 100; 
-const float REFERENCIAS_POSICION[] = { 0 };
-const float REFERENCIAS_THETA[] = { 0 };
+const float REFERENCIAS_POSICION[] = { 0, 8, 8, -6, -6, 0 };
+const float REFERENCIAS_THETA[10] = { 0 };
 
 const int NUM_REFERENCIAS_POSICION = sizeof(REFERENCIAS_POSICION) / sizeof(float);
 const int NUM_REFERENCIAS_THETA = sizeof(REFERENCIAS_THETA) / sizeof(float);
@@ -42,10 +42,10 @@ const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = {
 };
 
 const float K[CANT_VARIABLES] = {
-  +5.3305e+01, +2.2338e+00, -1.6664e+02, -5.5282e-01, +1.5591e+02
-};
+  +4.4068e+01, +1.9438e+00, -6.9564e+01, -2.3188e-01, +7.9341e+01
+};  
 
-const float F[CANT_REF] = { +2.3812e+02 };
+const float F[CANT_REF] = { -6.9564e+01, +0.0000e+00 };
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 Adafruit_MPU6050 mpu;

@@ -74,6 +74,12 @@ K = Klqr;
 F = 1 / (C_d*inv(eye(5)-(A_d-B_d*K))*B_d);
 mostrar_matriz(F, "F");
 
+%% Simulacion continua
+polos_c = [-300 -12.6664-14.2727i -12.6664+14.2727i  -7.1429 -5.4387 ];
+Kc = place(A, B, polos_c)
+
+F = 1 / (C*inv(eye(5)-(A-B*Kc))*B);
+
 %% Mostrar matriz
 function [] = mostrar_matriz(matriz, nombre)
 tamanio = size(matriz);

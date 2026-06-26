@@ -39,8 +39,16 @@ const float L_T[CANT_MEDICIONES][CANT_VARIABLES] = {
 };
 
 const float KH[CANT_VARIABLES + CANT_REF] = {
-  +5.3305e+01, +2.2338e+00, -1.6664e+02, -5.5282e-01, +1.5591e+02, +2.3812e+02
+  +1.1045e+02, +7.8221e+00, -2.1934e+02, -7.2649e-01, +2.1253e+02, +2.3032e+02
 };
+
+const variables_estado_t x_eq = {{
+  .theta = SESGO_THETA,
+  .omega = SESGO_OMEGA,
+  .posicion = CENTRO_PLATAFORMA,
+  .velocidad = 0,
+  .x_3 = 0,
+}};
 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE); 
 Adafruit_MPU6050 mpu;
@@ -58,18 +66,22 @@ void mover_servo(unsigned int senial_pwm) {
   servo.writeMicroseconds(senial_pwm);
 }
 
-float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* velocidad_angular, sensors_vec_t* aceleracion) {
+inline float calcular_angulo_acelerometro(sensors_vec_t* aceleracion) {
   // tan(theta) = aceleracion.y / aceleracion.z;
-  float theta_acelerometro = RADIANES_2_GRADOS * atan2(aceleracion->y, aceleracion->z) - SESGO_THETA;
+  return RADIANES_2_GRADOS * atan2(aceleracion->y, aceleracion->z) - x_eq.theta;
+}
+
+float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* velocidad_angular, sensors_vec_t* aceleracion) {
+  float theta_acelerometro = calcular_angulo_acelerometro(aceleracion);
 
   // theta_nuevo = theta_previo + omega_x * Delta t
-  float theta_giroscopio = theta_anterior + RADIANES_2_GRADOS * (velocidad_angular->x - SESGO_OMEGA) * ((float)(periodo_millis) / 1000.0f);
+  float theta_giroscopio = theta_anterior + RADIANES_2_GRADOS * (velocidad_angular->x - x_eq.omega) * ((float)(periodo_millis) / 1000.0f);
   
   return ALFA * theta_acelerometro + (1 - ALFA) * theta_giroscopio;
 }
 
 float calcular_posicion(unsigned int tiempo_ida_vuelta_micros) {
-  return CENTRO_PLATAFORMA - ((float) (tiempo_ida_vuelta_micros) * VELOCIDAD_CM_MICROS) / 2.0f;
+  return x_eq.posicion - ((float) (tiempo_ida_vuelta_micros) * VELOCIDAD_CM_MICROS) / 2.0f;
 }
 
 variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_medido, float pwm_control) {
@@ -96,13 +108,13 @@ variables_estado_t avanzar_observador(variables_estado_t x_hat, mediciones_t y_m
   return x_sig_hat;
 }
 
-ref_t avanzar_error_referencia(ref_t error_previo, variables_estado_t estado, ref_t referencia) {
+ref_t avanzar_error_referencia(ref_t error_previo, variables_estado_t x_hat, ref_t referencia) {
   ref_t error_actual = { 0 };
 
   for (int i = 0; i < CANT_REF; i++) {
     for (int j = 0; j < CANT_VARIABLES; j++) {
-      error_actual.vec[i] += A_d[CANT_VARIABLES + i][j] * estado.vec[j];
-      error_actual.vec[i] -= B_d[CANT_VARIABLES + i] * KH[j] * estado.vec[j];
+      error_actual.vec[i] += A_d[CANT_VARIABLES + i][j] * x_hat.vec[j];
+      error_actual.vec[i] -= B_d[CANT_VARIABLES + i] * KH[j] * x_hat.vec[j];
     }
 
     error_actual.vec[i] += A_d[CANT_VARIABLES + i][CANT_VARIABLES] * error_previo.vec[i];
@@ -151,6 +163,20 @@ void setup() {
   // Setteo del servo
   servo.attach(PIN_SERVO);
   delay(100);
+
+  Serial.println("Calculando estado inicial");
+  sensors_event_t acelerometro, giroscopio, temperatura;
+  mpu.getEvent(&acelerometro, &giroscopio, &temperatura);
+  unsigned int tiempo_ida_vuelta_micros = sonar.ping();
+
+  theta_complementario = calcular_angulo_acelerometro(&acelerometro.acceleration);
+  variables_estimadas = {{
+    .theta = theta_complementario,
+    .omega = RADIANES_2_GRADOS * (giroscopio.gyro.x - x_eq.omega),
+    .posicion = calcular_posicion(tiempo_ida_vuelta_micros),
+    .velocidad = 0, // se podria estimar a partir del angulo, y la posicion
+    .x_3 = 0, // se puede estimar utilizando el angulo, posicion y velocidad
+  }};
 }
 
 void loop() {
@@ -196,7 +222,7 @@ void loop() {
     .theta_medido = mediciones.theta,
     .theta_estimado = variables_estimadas.theta,
 
-    .omega_medida = (giroscopio.gyro.x - SESGO_OMEGA) * RADIANES_2_GRADOS,
+    .omega_medida = (giroscopio.gyro.x - x_eq.omega) * RADIANES_2_GRADOS,
     .omega_estimada = variables_estimadas.omega,
 
     .posicion_medido = mediciones.posicion,
@@ -211,7 +237,6 @@ void loop() {
     contador_iteracion = 0;
     contador_referencias++;
   }
-
   contador_iteracion++;
 
   tiempo_transcurrido = micros() - tiempo_inicio;

@@ -89,18 +89,33 @@ mostrar_matriz(H, "H");
 
 %% Usando LQR
 % x = [theta omega posicion velocidad x_3 q_1 ]
-Q = diag([ 2000, 0.01, 5000, 0.01, 0.01, 500 ]); 
+Q = diag([ 5000, 200, 22000, 800, 0.001, 150000]); 
 % u = [pwm]
-R = diag( 0.8 );
+R = diag( 0.01 );
 [KHlqr, S, E] = dlqr(A_ed, B_ed, Q, R);
 
+mostrar_matriz(KHlqr, "KH_lqr");
+
 Klqr = KHlqr(1:orden);
-mostrar_matriz(Klqr, "K_lqr");
+% mostrar_matriz(Klqr, "K_lqr");
 
 Hlqr = KHlqr(orden+1:end);
-mostrar_matriz(Hlqr, "H_lqr");
+% mostrar_matriz(Hlqr, "H_lqr");
 
 mostrar_matriz(log(E') / dt, "KH_lambda");
+
+%% Simulacion continua
+polos_obc = [-11.9-5.74i -11.9+5.74i -24.32 -40.5 -300];
+Lc = place(A', C', polos_obc)';
+Ld = place(A_d', C_d', exp(polos_obc*dt));
+mostrar_matriz(Ld, "Ld_T");
+
+%polos_c = [-8-3i -8+3i -15 -7 -5 -300];
+% polos_c = [-3.59 -3.591 -7.136 -8.397 -276.93 -308.81];
+polos_c = [-3.5680e+00, -3.5681e+00, -7.1370e+00, -8.6085e+00, -2.7385e+02, -3.0831e+02];
+Ke_c = place(A_e, B_e, polos_c);
+Kc = Ke_c(1:orden);
+Hc = Ke_c(orden+1:end);
 
 %% Mostrar matriz
 function [] = mostrar_matriz(matriz, nombre)

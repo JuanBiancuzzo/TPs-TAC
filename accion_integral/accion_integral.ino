@@ -66,13 +66,9 @@ void mover_servo(unsigned int senial_pwm) {
   servo.writeMicroseconds(senial_pwm);
 }
 
-inline float calcular_angulo_acelerometro(sensors_vec_t* aceleracion) {
-  // tan(theta) = aceleracion.y / aceleracion.z;
-  return RADIANES_2_GRADOS * atan2(aceleracion->y, aceleracion->z) - x_eq.theta;
-}
-
 float calcular_angulo_complementario(float theta_anterior, sensors_vec_t* velocidad_angular, sensors_vec_t* aceleracion) {
-  float theta_acelerometro = calcular_angulo_acelerometro(aceleracion);
+  // tan(theta) = aceleracion.y / aceleracion.z;
+  float theta_acelerometro = RADIANES_2_GRADOS * atan2(aceleracion->y, aceleracion->z) - x_eq.theta;
 
   // theta_nuevo = theta_previo + omega_x * Delta t
   float theta_giroscopio = theta_anterior + RADIANES_2_GRADOS * (velocidad_angular->x - x_eq.omega) * ((float)(periodo_millis) / 1000.0f);
@@ -163,20 +159,6 @@ void setup() {
   // Setteo del servo
   servo.attach(PIN_SERVO);
   delay(100);
-
-  Serial.println("Calculando estado inicial");
-  sensors_event_t acelerometro, giroscopio, temperatura;
-  mpu.getEvent(&acelerometro, &giroscopio, &temperatura);
-  unsigned int tiempo_ida_vuelta_micros = sonar.ping();
-
-  theta_complementario = calcular_angulo_acelerometro(&acelerometro.acceleration);
-  variables_estimadas = {{
-    .theta = theta_complementario,
-    .omega = RADIANES_2_GRADOS * (giroscopio.gyro.x - x_eq.omega),
-    .posicion = calcular_posicion(tiempo_ida_vuelta_micros),
-    .velocidad = 0, // se podria estimar a partir del angulo, y la posicion
-    .x_3 = 0, // se puede estimar utilizando el angulo, posicion y velocidad
-  }};
 }
 
 void loop() {
@@ -218,6 +200,7 @@ void loop() {
   enviar_datos({
     .accion_control = accion_control,
     .referencia = referencia.posicion,
+    .error = error_ref.posicion,
 
     .theta_medido = mediciones.theta,
     .theta_estimado = variables_estimadas.theta,

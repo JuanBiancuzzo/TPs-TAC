@@ -3,6 +3,9 @@ name: Subir informes
 on:
   workflow_dispatch:
 
+env:
+  NOMBRE-GRUPO: Grupo2
+
 permissions:
   contents: write
 
@@ -20,7 +23,7 @@ jobs:
           - rama: tp3
             nombre: TP3
     steps:
-      - name: Conseguir repo en la rama del tp1
+      - name: Conseguir repo en la rama ${{ matrix.rama }} 
         uses: actions/checkout@v4
         with:
           ref: ${{ matrix.rama }}
@@ -31,13 +34,13 @@ jobs:
         with:
           image: juanbiancuzzo/latex:latest
           options: -v ${{ github.workspace }}/Informe:/latex
-          run: sh -c "/scripts/compile.sh && cp /latex/main.pdf /latex/${{ matrix.nombre }}-Grupo2.pdf"
+          run: sh -c "/scripts/compile.sh && cp /latex/main.pdf /latex/${{ matrix.nombre }}-${{ env.NOMBRE-GRUPO }}.pdf"
 
       - name: Subir pdf a github artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.nombre }}
-          path: ${{ github.workspace }}/Informe/${{ matrix.nombre }}-Grupo2.pdf
+          path: ${{ github.workspace }}/Informe/${{ matrix.nombre }}-${{ env.NOMBRE-GRUPO }}.pdf
           if-no-files-found: warn
 
   release:
@@ -45,23 +48,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Descargar artifact del TP1
+      - name: Descargar artifact de los pdfs
         uses: actions/download-artifact@v4
-        with:
-          name: TP1
-          path: .
-
-      - name: Descargar artifact del TP2
-        uses: actions/download-artifact@v4
-        with:
-          name: TP2
-          path: .
-
-      - name: Descargar artifact del TP3
-        uses: actions/download-artifact@v4
-        with:
-          name: TP3
-          path: .
 
       - name: Subir artifact como release asset
         uses: softprops/action-gh-release@v2
@@ -69,6 +57,4 @@ jobs:
           tag_name: informe
           name: "Release informe"
           files: |
-            **/TP1-Grupo2.pdf
-            **/TP2-Grupo2.pdf
-            **/TP3-Grupo2.pdf
+            **/*.pdf

@@ -3,11 +3,11 @@ name: Subir informes
 on:
   workflow_dispatch:
 
-env:
-  NOMBRE-GRUPO: Grupo2
-
 permissions:
   contents: write
+
+env:
+  NOMBRE-GRUPO: Grupo2
 
 jobs:
   informes:
